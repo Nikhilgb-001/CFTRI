@@ -1,0 +1,139 @@
+// import mongoose from "mongoose";
+
+// const userSchema = new mongoose.Schema(
+//   {
+//     name: { type: String, required: true },
+//     email: { type: String, required: true, unique: true },
+//     password: { type: String, required: true },
+//     contact: { type: String, required: false },
+//     onboarding: {
+//       details: {
+//         subject: { type: String },
+//         // discussionMatter: { type: String },
+//         discussionMatter: {
+//           type: String,
+//           enum: [
+//             "Bakery",
+//             "Sweets",
+//             "Party",
+//             "Wedding",
+//           ],
+//           default: "Sweets",
+//         },
+//         leadValue: { type: Number },
+//         source: { type: String },
+//         type: { type: String },
+//         expectedCloseDate: { type: Date },
+//         coordinator: {
+//           type: mongoose.Schema.Types.ObjectId,
+//           ref: "Coordinator",
+//         },
+//       },
+//       contactPersons: [
+//         {
+//           name: { type: String },
+//           emailType: { type: String },
+//           emailDetail: { type: String },
+//           contactNumberType: { type: String },
+//           organization: { type: String },
+//           contactNumberType: { type: String },
+//           mobileDetail: { type: String },
+//         },
+//       ],
+//       technologies: [
+//         {
+//           item: { type: String },
+//           price: { type: Number },
+//           quantity: { type: Number },
+//           amount: { type: Number },
+//         },
+//       ],
+//     },
+//     assignedTask: { type: String, default: "" },
+//     taskStatus: { type: String, default: "pending" },
+//   },
+//   { timestamps: true }
+// );
+
+// export default mongoose.model("User", userSchema);
+
+import mongoose from "mongoose";
+
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    contact: { type: String },
+
+    onboarding: {
+      details: {
+        subject: { type: String },
+
+        discussionMatter: {
+          type: String,
+          enum: [
+            "Bakery Products",
+            "Beverage Products",
+            "Cereal Products",
+            "Convenience Products",
+            "Food Machinery",
+            "Fruits & Vegetable Products",
+            "Meat & Marine Products",
+            "Microbiology & Fermentation",
+            "Plantation & Spice Products",
+            "Protein Specialty Products",
+          ],
+          default: "Bakery Products",
+        },
+
+        type: {
+          type: String,
+          enum: [
+            "Industrial Collaboration",
+            "Technological Transfer",
+            "Start-up",
+            "MNC",
+            "Women Entrepreneurship",
+            "FPO",
+            "SHC",
+            "MSME",
+          ],
+        },
+
+        expectedCloseDate: { type: Date },
+
+        coordinator: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Coordinator",
+        },
+      },
+
+      contactPersons: [
+        {
+          name: { type: String },
+          emailType: { type: String },
+          emailDetail: { type: String },
+          contactNumberType: { type: String },
+          mobileDetail: { type: String },
+          organization: { type: String },
+        },
+      ],
+
+      technologies: [
+        {
+          item: { type: String },
+          price: { type: Number },
+          quantity: { type: Number },
+          amount: { type: Number },
+        },
+      ],
+    },
+
+    assignedTask: { type: String, default: "" },
+    taskStatus: { type: String, default: "pending" },
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model("User", userSchema);

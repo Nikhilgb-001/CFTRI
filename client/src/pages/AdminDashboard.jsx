@@ -1,0 +1,1502 @@
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import axios from "axios";
+import { Bar, Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import CreateLead from "./CreateLead";
+import AdminSettings from "./AdminSettings";
+import {
+  Users,
+  BarChart2,
+  Bookmark,
+  Settings,
+  Plus,
+  User,
+  DollarSign,
+  Clipboard,
+  BookOpen,
+  Hash,
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Check,
+  X,
+  ArrowRight,
+  AlertCircle,
+  Contact,
+  Cpu,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
+
+ChartJS.register(
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+// Memoized chart components to prevent unnecessary re-renders
+const MemoizedBarChart = React.memo(({ data, options }) => (
+  <Bar data={data} options={options} />
+));
+const MemoizedLineChart = React.memo(({ data, options }) => (
+  <Line data={data} options={options} />
+));
+
+const AdminDashboard = () => {
+  const [activeTab, setActiveTab] = useState(1);
+  const [users, setUsers] = useState([]);
+  const [techFlows, setTechFlows] = useState([]);
+  const [isLoadingTechFlows, setIsLoadingTechFlows] = useState(false);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
+
+  const [chartData, setChartData] = useState({
+    dailyLogins: null,
+    monthlyLogins: null,
+  });
+  const [chartDataLoaded, setChartDataLoaded] = useState(false);
+  const [assignForm, setAssignForm] = useState({
+    show: false,
+    userId: "",
+    coordinatorId: "",
+    task: "",
+  });
+  const [coordinators, setCoordinators] = useState([]);
+  const [leads, setLeads] = useState([]);
+  const [showCreateLeadForm, setShowCreateLeadForm] = useState(false);
+  const [expandedUsers, setExpandedUsers] = useState({});
+  const [expandedLeads, setExpandedLeads] = useState({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const token = localStorage.getItem("token");
+
+  // New state for coordinator analytics data
+  const [coordinatorAnalytics, setCoordinatorAnalytics] = useState(null);
+  const [coordinatorAnalyticsLoaded, setCoordinatorAnalyticsLoaded] =
+    useState(false);
+  const [
+    isCoordinatorAnalyticsRefreshing,
+    setIsCoordinatorAnalyticsRefreshing,
+  ] = useState(false);
+
+  const [selectedCoordinator, setSelectedCoordinator] = useState("");
+  const [actionLogs, setActionLogs] = useState([]);
+  const [isActionLogsLoading, setIsActionLogsLoading] = useState(false);
+
+  // Toggle expansion for user details
+  const toggleUserExpansion = (userId) => {
+    setExpandedUsers((prev) => ({
+      ...prev,
+      [userId]: !prev[userId],
+    }));
+  };
+
+  // Toggle expansion for lead details
+  const toggleLeadExpansion = (leadId) => {
+    setExpandedLeads((prev) => ({
+      ...prev,
+      [leadId]: !prev[leadId],
+    }));
+  };
+
+  // Fetch users for User Details tab
+  useEffect(() => {
+    if (activeTab === 1) {
+      const fetchUsers = async () => {
+        try {
+          const res = await axios.get("http://localhost:5000/admin/users", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setUsers(res.data);
+        } catch (err) {
+          console.error(err);
+        }
+      };
+      fetchUsers();
+    }
+  }, [activeTab, token]);
+
+  // Define fetchChartData for Analytics (existing)
+  const fetchChartData = useCallback(async () => {
+    let isMounted = true;
+    try {
+      setIsRefreshing(true);
+      const res = await axios.get("http://localhost:5000/admin/chart-data", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!isMounted) return;
+      const weeklyLabels = res.data.weeklyLabels || [];
+      const weeklyLogins = res.data.weeklyLogins || [];
+      const monthlyLabels = res.data.monthlyLabels || [];
+      const monthlyLogins = res.data.monthlyLogins || [];
+
+      // Daily Logins Chart Data (last 7 days)
+      const dailyLoginData = {
+        labels: weeklyLabels.map((date) =>
+          new Date(date).toLocaleDateString("en-US", { weekday: "short" })
+        ),
+        datasets: [
+          {
+            label: "Daily Logins",
+            data: weeklyLogins,
+            backgroundColor: "rgba(54, 162, 235, 0.6)",
+            borderColor: "rgba(54, 162, 235, 1)",
+            borderWidth: 1,
+            tension: 0.1,
+          },
+        ],
+      };
+
+      // Monthly Logins Chart Data (last 30 days)
+      const monthlyLoginData = {
+        labels: monthlyLabels.map((date) =>
+          new Date(date).toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "short",
+          })
+        ),
+        datasets: [
+          {
+            label: "Monthly Logins",
+            data: monthlyLogins,
+            backgroundColor: "rgba(255, 99, 132, 0.6)",
+            borderColor: "rgba(255, 99, 132, 1)",
+            borderWidth: 1,
+            tension: 0.1,
+          },
+        ],
+      };
+
+      setChartData({
+        dailyLogins: dailyLoginData,
+        monthlyLogins: monthlyLoginData,
+      });
+      setChartDataLoaded(true);
+    } catch (err) {
+      console.error("Error fetching chart data:", err);
+      setChartData({
+        dailyLogins: { labels: [], datasets: [] },
+        monthlyLogins: { labels: [], datasets: [] },
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
+
+  // Fetch coordinator analytics data for Coordinator Analytics tab
+  // const fetchCoordinatorAnalytics = useCallback(async () => {
+  //   try {
+  //     setIsCoordinatorAnalyticsRefreshing(true);
+  //     const res = await axios.get(
+  //       "http://localhost:5000/coordinator/analytics",
+  //       {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       }
+  //     );
+  //     setCoordinatorAnalytics(res.data);
+  //     setCoordinatorAnalyticsLoaded(true);
+  //   } catch (err) {
+  //     console.error("Error fetching coordinator analytics:", err);
+  //   } finally {
+  //     setIsCoordinatorAnalyticsRefreshing(false);
+  //   }
+  // }, [token]);
+
+  const fetchCoordinatorAnalytics = useCallback(async () => {
+    if (!selectedCoordinator) return; // Do nothing if no coordinator is selected
+    try {
+      setIsCoordinatorAnalyticsRefreshing(true);
+      const res = await axios.get(
+        `http://localhost:5000/coordinator/analytics?coordinatorId=${selectedCoordinator}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCoordinatorAnalytics(res.data);
+      setCoordinatorAnalyticsLoaded(true);
+    } catch (err) {
+      console.error("Error fetching coordinator analytics:", err);
+    } finally {
+      setIsCoordinatorAnalyticsRefreshing(false);
+    }
+  }, [token, selectedCoordinator]);
+
+  const fetchActionLogs = useCallback(async () => {
+    if (!selectedCoordinator) return;
+    try {
+      setIsActionLogsLoading(true);
+      const res = await axios.get(
+        `http://localhost:5000/coordinator/action-logs?coordinatorId=${selectedCoordinator}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setActionLogs(res.data);
+    } catch (err) {
+      console.error("Error fetching action logs:", err);
+    } finally {
+      setIsActionLogsLoading(false);
+    }
+  }, [token, selectedCoordinator]);
+
+  // Automatically fetch coordinator analytics and action logs when tab 5 is active and a coordinator is selected
+  useEffect(() => {
+    if (activeTab === 5 && selectedCoordinator) {
+      fetchCoordinatorAnalytics();
+      fetchActionLogs();
+    }
+  }, [
+    activeTab,
+    selectedCoordinator,
+    fetchCoordinatorAnalytics,
+    fetchActionLogs,
+  ]);
+
+  useEffect(() => {
+    if (activeTab === 6 && selectedCoordinator) {
+      const fetchTechFlows = async () => {
+        try {
+          setIsLoadingTechFlows(true);
+          const res = await axios.get(
+            `http://localhost:5000/coordinator/tech-transfer-flow?coordinatorId=${selectedCoordinator}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setTechFlows(res.data);
+        } catch (err) {
+          console.error("Error loading tech flow:", err);
+        } finally {
+          setIsLoadingTechFlows(false);
+        }
+      };
+      fetchTechFlows();
+    }
+  }, [activeTab, selectedCoordinator, token]);
+
+  // Fetch chart data when Analytics tab (tab 2) is active or not loaded
+  useEffect(() => {
+    if (activeTab === 2 || !chartDataLoaded) {
+      fetchChartData();
+    }
+  }, [activeTab, chartDataLoaded, fetchChartData]);
+
+  // Fetch coordinator analytics when the new tab (tab 5) is active
+  useEffect(() => {
+    if (activeTab === 5 || !coordinatorAnalyticsLoaded) {
+      fetchCoordinatorAnalytics();
+    }
+  }, [activeTab, coordinatorAnalyticsLoaded, fetchCoordinatorAnalytics]);
+
+  // Fetch coordinators for assignment functionality
+  useEffect(() => {
+    const fetchCoordinators = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:5000/admin/coordinators",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setCoordinators(res.data);
+      } catch (err) {
+        console.error("Error fetching coordinators:", err);
+      }
+    };
+    fetchCoordinators();
+  }, [token]);
+
+  // Fetch leads for Leads tab
+  useEffect(() => {
+    if (activeTab === 3) {
+      const fetchLeads = async () => {
+        try {
+          const res = await axios.get("http://localhost:5000/lead/all");
+          setLeads(res.data);
+        } catch (err) {
+          console.error("Error fetching leads:", err);
+        }
+      };
+      fetchLeads();
+    }
+  }, [activeTab]);
+
+  // Assignment functions
+  const openAssignForm = (userId) => {
+    setAssignForm({ show: true, userId, coordinatorId: "", task: "" });
+  };
+
+  const handleAssignChange = (e) => {
+    const { name, value } = e.target;
+    setAssignForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const submitAssignForm = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.put(
+        `http://localhost:5000/admin/users/${assignForm.userId}/assign`,
+        { coordinatorId: assignForm.coordinatorId, task: assignForm.task },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("Coordinator assigned successfully");
+      setAssignForm({ show: false, userId: "", coordinatorId: "", task: "" });
+      // Refresh users after assignment
+      const res = await axios.get("http://localhost:5000/admin/users", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(res.data);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to assign coordinator");
+    }
+  };
+
+  // Memoized chart options
+  const barChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value) => "$" + value,
+          },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => "$" + context.raw.toLocaleString(),
+          },
+        },
+      },
+    }),
+    []
+  );
+
+  const lineChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0 },
+        },
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => context.raw + " logins",
+          },
+        },
+      },
+    }),
+    []
+  );
+
+  // Render a spinner for loading users in the User Details tab
+  if (!users && activeTab === 1) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Render the Admin Dashboard
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            Admin Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Manage users, leads, view analytics and more
+          </p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          <button
+            onClick={() => {
+              setActiveTab(1);
+              setShowCreateLeadForm(false);
+            }}
+            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
+              activeTab === 1
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <Users className="h-5 w-5 mr-2" />
+            User Details
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab(2);
+              setShowCreateLeadForm(false);
+            }}
+            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
+              activeTab === 2
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <BarChart2 className="h-5 w-5 mr-2" />
+            Analytics
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab(3);
+              setShowCreateLeadForm(false);
+            }}
+            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
+              activeTab === 3
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <Bookmark className="h-5 w-5 mr-2" />
+            Leads
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab(4);
+              setShowCreateLeadForm(false);
+            }}
+            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
+              activeTab === 4
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <Settings className="h-5 w-5 mr-2" />
+            Settings
+          </button>
+          {/* New tab for Coordinator Analytics */}
+          <button
+            onClick={() => {
+              setActiveTab(5);
+              setShowCreateLeadForm(false);
+            }}
+            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
+              activeTab === 5
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <BarChart2 className="h-5 w-5 mr-2" />
+            Coordinator Analytics
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab(6);
+              setShowCreateLeadForm(false);
+            }}
+            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
+              activeTab === 6
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <BookOpen className="h-5 w-5 mr-2" />
+            Tech Transfer
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-white rounded-xl shadow-md p-6">
+          {/* User Details Tab */}
+          {activeTab === 1 && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                  <Users className="h-6 w-6 mr-2 text-blue-600" />
+                  User Management
+                </h2>
+                <div className="text-sm text-gray-500">
+                  {users.length} users found
+                </div>
+              </div>
+
+              {users.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-600">No users found</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {users.map((user) => (
+                    <div
+                      key={user._id}
+                      className="border rounded-lg overflow-hidden"
+                    >
+                      <div
+                        className="p-4 bg-gray-50 flex justify-between items-center cursor-pointer"
+                        onClick={() => toggleUserExpansion(user._id)}
+                      >
+                        <div className="flex items-center">
+                          <User className="h-5 w-5 mr-3 text-blue-600" />
+                          <div>
+                            <h3 className="font-semibold text-gray-800">
+                              {user.name}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          {expandedUsers[user._id] ? (
+                            <ChevronDown className="h-5 w-5 text-gray-500" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-gray-500" />
+                          )}
+                        </div>
+                      </div>
+                      {expandedUsers[user._id] && (
+                        <div className="p-4 border-t">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div className="flex items-start">
+                              <Clipboard className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                  Assigned Task
+                                </p>
+                                <p className="text-gray-800">
+                                  {user.assignedTask || "None assigned"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start">
+                              <BookOpen className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                  Subject
+                                </p>
+                                <p className="text-gray-800">
+                                  {user.onboarding?.details?.subject || "N/A"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start">
+                              <Calendar className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                  Close Date
+                                </p>
+                                <p className="text-gray-800">
+                                  {user.onboarding?.details?.expectedCloseDate
+                                    ? new Date(
+                                        user.onboarding.details.expectedCloseDate
+                                      ).toLocaleDateString()
+                                    : "N/A"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          {user.onboarding?.technologies?.length > 0 && (
+                            <div className="mb-4">
+                              <h4 className="font-medium text-gray-800 mb-2 flex items-center">
+                                <Cpu className="h-5 w-5 mr-2 text-blue-600" />
+                                Technologies
+                              </h4>
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Category
+                                      </th>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Selected Technology
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="bg-white divide-y divide-gray-200">
+                                    {user.onboarding.technologies.map(
+                                      (tech, idx) => {
+                                        let category = "";
+                                        if (idx === 0) category = "Broad Area";
+                                        else if (idx === 1)
+                                          category = "Commodity";
+                                        else if (idx === 2)
+                                          category = "Keyword";
+                                        return (
+                                          <tr key={idx}>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                              {category}
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                              {tech.item || "Not selected"}
+                                            </td>
+                                          </tr>
+                                        );
+                                      }
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                          <div className="mt-4">
+                            {!assignForm.show ||
+                            assignForm.userId !== user._id ? (
+                              <button
+                                onClick={() => openAssignForm(user._id)}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                              >
+                                <ArrowRight className="h-4 w-4 mr-2" />
+                                Assign Coordinator
+                              </button>
+                            ) : (
+                              <form
+                                onSubmit={submitAssignForm}
+                                className="bg-gray-50 p-4 rounded-lg"
+                              >
+                                <div className="mb-4">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Coordinator
+                                  </label>
+                                  <select
+                                    name="coordinatorId"
+                                    value={assignForm.coordinatorId}
+                                    onChange={handleAssignChange}
+                                    className="w-full p-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    required
+                                  >
+                                    <option value="">
+                                      Select a coordinator
+                                    </option>
+                                    {coordinators.map((coord) => (
+                                      <option key={coord._id} value={coord._id}>
+                                        {coord.name} ({coord.email})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="mb-4">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Task Description
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="task"
+                                    value={assignForm.task}
+                                    onChange={handleAssignChange}
+                                    className="w-full p-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    required
+                                  />
+                                </div>
+                                <div className="flex justify-end space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setAssignForm({
+                                        show: false,
+                                        userId: "",
+                                        coordinatorId: "",
+                                        task: "",
+                                      })
+                                    }
+                                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors flex items-center"
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="submit"
+                                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                                  >
+                                    <Check className="h-4 w-4 mr-1" />
+                                    Assign
+                                  </button>
+                                </div>
+                              </form>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Analytics Tab */}
+          {activeTab === 2 && (
+            <div className="space-y-8">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                  <BarChart2 className="h-6 w-6 mr-2 text-blue-600" />
+                  Analytics Dashboard
+                </h2>
+                <button
+                  onClick={() => {
+                    setChartDataLoaded(false);
+                    fetchChartData();
+                  }}
+                  disabled={isRefreshing}
+                  className={`flex items-center px-3 py-1 rounded-lg text-sm ${
+                    isRefreshing
+                      ? "bg-gray-200 text-gray-600"
+                      : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                  } transition-colors`}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 mr-1 ${
+                      isRefreshing ? "animate-spin" : ""
+                    }`}
+                  />
+                  {isRefreshing ? "Refreshing..." : "Refresh Data"}
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-medium text-green-600">
+                        Today's Logins
+                      </p>
+                      <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                        {chartData.dailyLogins?.datasets[0].data.slice(-1)[0] ||
+                          "0"}
+                      </h3>
+                    </div>
+                    <Users className="h-6 w-6 text-green-500" />
+                  </div>
+                </div> */}
+                {/* <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-sm font-medium text-purple-600">
+                        Active Leads
+                      </p>
+                      <h3 className="text-2xl font-bold text-gray-800 mt-1">
+                        {leads.length || "0"}
+                      </h3>
+                    </div>
+                    <Bookmark className="h-6 w-6 text-purple-500" />
+                  </div>
+                </div> */}
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-xl shadow-sm border">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+                    Daily Logins (Last 7 Days)
+                  </h3>
+                  {chartData.dailyLogins ? (
+                    <div className="h-64">
+                      <MemoizedLineChart
+                        data={chartData.dailyLogins}
+                        options={lineChartOptions}
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Loader2 className="h-8 w-8 mx-auto animate-spin text-gray-400" />
+                      <p className="text-gray-500 mt-2">
+                        Loading daily login data...
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm border">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <Calendar className="h-5 w-5 mr-2 text-red-600" />
+                    Monthly Logins (Last 30 Days)
+                  </h3>
+                  {chartData.monthlyLogins ? (
+                    <div className="h-64">
+                      <MemoizedLineChart
+                        data={chartData.monthlyLogins}
+                        options={lineChartOptions}
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Loader2 className="h-8 w-8 mx-auto animate-spin text-gray-400" />
+                      <p className="text-gray-500 mt-2">
+                        Loading monthly login data...
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Leads Tab */}
+          {activeTab === 3 && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                  <Bookmark className="h-6 w-6 mr-2 text-blue-600" />
+                  Leads Management
+                </h2>
+                <button
+                  onClick={() => window.open("/create-lead", "_blank")}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Lead
+                </button>
+              </div>
+              {showCreateLeadForm && (
+                <div className="mb-6">
+                  <CreateLead />
+                </div>
+              )}
+              {leads.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-600">No leads found</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {leads.map((lead) => (
+                    <div
+                      key={lead._id}
+                      className="border rounded-lg overflow-hidden"
+                    >
+                      <div
+                        className="p-4 bg-gray-50 flex justify-between items-center cursor-pointer"
+                        onClick={() => toggleLeadExpansion(lead._id)}
+                      >
+                        <div>
+                          <h3 className="font-semibold text-gray-800">
+                            {lead.onboarding?.details?.subject ||
+                              "Untitled Lead"}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {lead.onboarding?.details?.type || "No type"}
+                          </p>
+                        </div>
+                        {expandedLeads[lead._id] ? (
+                          <ChevronDown className="h-5 w-5 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 text-gray-500" />
+                        )}
+                      </div>
+                      {expandedLeads[lead._id] && (
+                        <div className="p-4 border-t">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div className="flex items-start">
+                              <BookOpen className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                  Discussion Matter
+                                </p>
+                                <p className="text-gray-800">
+                                  {lead.onboarding?.details?.discussionMatter ||
+                                    "N/A"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start">
+                              <Calendar className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                  Close Date
+                                </p>
+                                <p className="text-gray-800">
+                                  {lead.onboarding?.details?.expectedCloseDate
+                                    ? new Date(
+                                        lead.onboarding.details.expectedCloseDate
+                                      ).toLocaleDateString()
+                                    : "N/A"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start">
+                              <DollarSign className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                  Lead Value
+                                </p>
+                                <p className="text-gray-800">
+                                  {lead.onboarding?.details?.leadValue !==
+                                  undefined
+                                    ? `$${lead.onboarding.details.leadValue}`
+                                    : "N/A"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          {lead.onboarding?.contactPersons?.length > 0 && (
+                            <div className="mb-4">
+                              <h4 className="font-medium text-gray-800 mb-2 flex items-center">
+                                <Contact className="h-5 w-5 mr-2 text-blue-600" />
+                                Contact Persons
+                              </h4>
+                              <div className="space-y-3 pl-7">
+                                {lead.onboarding.contactPersons.map(
+                                  (contact, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="border-l-2 border-blue-200 pl-4"
+                                    >
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                          <p className="text-sm font-medium text-gray-500">
+                                            Name
+                                          </p>
+                                          <p className="text-gray-800">
+                                            {contact.name}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm font-medium text-gray-500">
+                                            Email
+                                          </p>
+                                          <p className="text-gray-800">
+                                            {contact.emailDetail}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm font-medium text-gray-500">
+                                            Mobile
+                                          </p>
+                                          <p className="text-gray-800">
+                                            {contact.mobileDetail}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm font-medium text-gray-500">
+                                            Organization
+                                          </p>
+                                          <p className="text-gray-800">
+                                            {contact.organization}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          {lead.onboarding?.technologies?.length > 0 && (
+                            <div className="mb-4">
+                              <h4 className="font-medium text-gray-800 mb-2 flex items-center">
+                                <Cpu className="h-5 w-5 mr-2 text-blue-600" />
+                                Technologies
+                              </h4>
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Category
+                                      </th>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Selected Technology
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="bg-white divide-y divide-gray-200">
+                                    {lead.onboarding.technologies.map(
+                                      (tech, idx) => {
+                                        let category = "";
+                                        if (idx === 0) category = "Broad Area";
+                                        else if (idx === 1)
+                                          category = "Commodity";
+                                        else if (idx === 2)
+                                          category = "Keyword";
+                                        return (
+                                          <tr key={idx}>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                              {category}
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                              {tech.item || "Not selected"}
+                                            </td>
+                                          </tr>
+                                        );
+                                      }
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {activeTab === 4 && <AdminSettings />}
+
+          {/* New Coordinator Analytics Tab */}
+          {activeTab === 5 && (
+            <div className="space-y-8">
+              {/* Coordinator Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-800 mb-1">
+                  Select Coordinator
+                </label>
+                <select
+                  value={selectedCoordinator}
+                  onChange={(e) => setSelectedCoordinator(e.target.value)}
+                  className="w-full border p-2 rounded-lg"
+                >
+                  <option value="">Select a Coordinator</option>
+                  {coordinators.map((coord) => (
+                    <option key={coord._id} value={coord._id}>
+                      {coord.name} ({coord.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Header & Refresh */}
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                  <BarChart2 className="h-6 w-6 mr-2 text-blue-600" />
+                  Coordinator Analytics
+                </h2>
+                <button
+                  onClick={() => {
+                    fetchCoordinatorAnalytics();
+                    fetchActionLogs();
+                  }}
+                  disabled={
+                    isCoordinatorAnalyticsRefreshing || isActionLogsLoading
+                  }
+                  className={`flex items-center px-3 py-1 rounded-lg text-sm ${
+                    isCoordinatorAnalyticsRefreshing || isActionLogsLoading
+                      ? "bg-gray-200 text-gray-600"
+                      : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                  } transition-colors`}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 mr-1 ${
+                      isCoordinatorAnalyticsRefreshing || isActionLogsLoading
+                        ? "animate-spin"
+                        : ""
+                    }`}
+                  />
+                  {isCoordinatorAnalyticsRefreshing || isActionLogsLoading
+                    ? "Refreshing..."
+                    : "Refresh Data"}
+                </button>
+              </div>
+
+              {/* Analytics Display */}
+              {coordinatorAnalytics ? (
+                <div>
+                  {/* Task Status Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-blue-100 p-4 rounded-lg border">
+                      <p className="text-sm text-blue-600">Pending Tasks</p>
+                      <h3 className="text-2xl font-bold text-blue-800">
+                        {coordinatorAnalytics.taskStats.pending}
+                      </h3>
+                    </div>
+                    <div className="bg-yellow-100 p-4 rounded-lg border">
+                      <p className="text-sm text-yellow-600">In Progress</p>
+                      <h3 className="text-2xl font-bold text-yellow-800">
+                        {coordinatorAnalytics.taskStats.inProgress}
+                      </h3>
+                    </div>
+                    <div className="bg-green-100 p-4 rounded-lg border">
+                      <p className="text-sm text-green-600">Completed Tasks</p>
+                      <h3 className="text-2xl font-bold text-green-800">
+                        {coordinatorAnalytics.taskStats.completed}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* ECF Charts Section */}
+                  <div className="mt-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                      ECF (Expected Cash Flow) Tracking
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Monthly ECF Chart */}
+                      <div className="bg-white p-4 rounded-lg shadow border">
+                        <h4 className="font-medium text-gray-700 mb-3">
+                          Monthly ECF: ${coordinatorAnalytics.monthlyECF || 0}
+                        </h4>
+                        <div className="h-64">
+                          <MemoizedBarChart
+                            data={{
+                              labels: ["Current Month"],
+                              datasets: [
+                                {
+                                  label: "Monthly ECF",
+                                  data: [coordinatorAnalytics.monthlyECF || 0],
+                                  backgroundColor: "rgba(54, 162, 235, 0.6)",
+                                  borderColor: "rgba(54, 162, 235, 1)",
+                                  borderWidth: 1,
+                                },
+                              ],
+                            }}
+                            options={{
+                              ...barChartOptions,
+                              plugins: {
+                                ...barChartOptions.plugins,
+                                title: {
+                                  display: true,
+                                  text: "Monthly ECF Generation",
+                                },
+                              },
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Yearly ECF Chart */}
+                      <div className="bg-white p-4 rounded-lg shadow border">
+                        <h4 className="font-medium text-gray-700 mb-3">
+                          Yearly ECF: ${coordinatorAnalytics.yearlyECF || 0}
+                        </h4>
+                        <div className="h-64">
+                          <MemoizedBarChart
+                            data={{
+                              labels: ["Current Year"],
+                              datasets: [
+                                {
+                                  label: "Yearly ECF",
+                                  data: [coordinatorAnalytics.yearlyECF || 0],
+                                  backgroundColor: "rgba(75, 192, 192, 0.6)",
+                                  borderColor: "rgba(75, 192, 192, 1)",
+                                  borderWidth: 1,
+                                },
+                              ],
+                            }}
+                            options={{
+                              ...barChartOptions,
+                              plugins: {
+                                ...barChartOptions.plugins,
+                                title: {
+                                  display: true,
+                                  text: "Yearly ECF Generation",
+                                },
+                              },
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Performance Metrics */}
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-indigo-100 p-4 rounded-lg border">
+                      <p className="text-sm text-indigo-600">Total Amounts</p>
+                      <h3 className="text-2xl font-bold text-indigo-800">
+                        ${coordinatorAnalytics.totalAmounts || 0}
+                      </h3>
+                    </div>
+                    <div className="bg-purple-100 p-4 rounded-lg border">
+                      <p className="text-sm text-purple-600">
+                        Payment Received
+                      </p>
+                      <h3 className="text-2xl font-bold text-purple-800">
+                        ${coordinatorAnalytics.totalPaymentReceived || 0}
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 mx-auto animate-spin text-gray-400" />
+                  <p className="text-gray-500 mt-2">
+                    Loading coordinator analytics...
+                  </p>
+                </div>
+              )}
+
+              {/* Action Logs Display */}
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Action Logs
+                </h3>
+                {isActionLogsLoading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 mx-auto animate-spin text-gray-400" />
+                    <p className="text-gray-500 mt-2">Loading action logs...</p>
+                  </div>
+                ) : actionLogs.length > 0 ? (
+                  <div className="space-y-4">
+                    {actionLogs.map((log) => (
+                      <div key={log._id} className="border p-4 rounded-lg">
+                        <div className="flex justify-between">
+                          <div>
+                            <span className="font-medium">
+                              {log.actionType}
+                            </span>
+                            <span className="text-sm text-gray-500 ml-2">
+                              ({log.category})
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(log.date).toLocaleDateString()}
+                          </div>
+                        </div>
+                        {log.details && (
+                          <p className="mt-1 text-sm text-gray-700">
+                            {log.details}
+                          </p>
+                        )}
+                        {log.transactionId && (
+                          <p className="mt-1 text-sm">
+                            <span className="font-medium">Transaction ID:</span>{" "}
+                            {log.transactionId}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-600">
+                    No action logs found for this coordinator.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 6 && (
+            <div className="space-y-6">
+              {/* Coordinator selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">
+                  Select Coordinator
+                </label>
+                <select
+                  value={selectedCoordinator}
+                  onChange={(e) => setSelectedCoordinator(e.target.value)}
+                  className="w-full border p-2 rounded-lg"
+                >
+                  <option value="">-- pick one --</option>
+                  {coordinators.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name} ({c.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Header, Excel & Print buttons */}
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800">
+                  Technology Transfer Process Flow
+                </h2>
+                <div className="space-x-2">
+                  <button
+                    onClick={async () => {
+                      setIsDownloadingReport(true);
+                      try {
+                        const res = await axios.get(
+                          `http://localhost:5000/coordinator/tech-transfer-report?coordinatorId=${selectedCoordinator}`,
+                          {
+                            headers: { Authorization: `Bearer ${token}` },
+                            responseType: "blob", // <-- fix download
+                          }
+                        );
+                        const url = window.URL.createObjectURL(
+                          new Blob([res.data])
+                        );
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.setAttribute(
+                          "download",
+                          "tech-transfer-report.xlsx"
+                        );
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                      } catch (err) {
+                        console.error("Download failed:", err);
+                      } finally {
+                        setIsDownloadingReport(false);
+                      }
+                    }}
+                    disabled={!selectedCoordinator || isDownloadingReport}
+                    className={`px-4 py-2 rounded-lg text-sm ${
+                      isDownloadingReport
+                        ? "bg-gray-200 text-gray-600"
+                        : "bg-green-600 text-white hover:bg-green-700"
+                    }`}
+                  >
+                    {isDownloadingReport ? "Downloading…" : "Download Excel"}
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="px-4 py-2 rounded-lg text-sm bg-blue-100 text-blue-600 hover:bg-blue-200"
+                  >
+                    Print
+                  </button>
+                </div>
+              </div>
+
+              {/* Data table */}
+              {isLoadingTechFlows ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
+                  <p className="text-gray-500 mt-2">Loading flows…</p>
+                </div>
+              ) : techFlows.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    {/* <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">
+                          Technology
+                        </th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">
+                          Year
+                        </th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">
+                          Premia
+                        </th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">
+                          PI
+                        </th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">
+                          Member
+                        </th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">
+                          License Details
+                        </th>
+                      </tr>
+                    </thead> */}
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {/* {techFlows.map((doc, i) => {
+                        const flows = doc.flows || [];
+                        return (
+                          <tr key={i}>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                              {flows[0]?.step}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                              {flows[1]?.step}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                              {flows[2]?.details}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                              {flows[3]?.details}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                              {doc.user?.name}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                              {`${
+                                doc.user?.onboarding?.details?.address || ""
+                              }, ${
+                                doc.user?.onboarding?.details?.contact || ""
+                              }`}
+                            </td>
+                          </tr>
+                        );
+                      })} */}
+
+                      {techFlows.map((doc, idx) => (
+                        <div
+                          key={idx}
+                          className="border rounded-lg mb-6 overflow-hidden"
+                        >
+                          {/* Header: user/member info */}
+                          <div className="p-4 bg-gray-50 flex justify-between items-center">
+                            <div>
+                              <h3 className="font-semibold text-gray-800">
+                                {doc.user?.name || "—"}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                {doc.user?.onboarding?.details?.address ||
+                                  "No address"}
+                                ,{" "}
+                                {doc.user?.onboarding?.details?.contact ||
+                                  "No contact"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Body: full flow list */}
+                          <div className="p-4">
+                            {doc.flows.length > 0 ? (
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">
+                                        Step
+                                      </th>
+                                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">
+                                        Date
+                                      </th>
+                                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">
+                                        Details
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="bg-white divide-y divide-gray-200">
+                                    {doc.flows.map((flow, i) => (
+                                      <tr key={i}>
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                          {flow.step}
+                                        </td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                          {new Date(
+                                            flow.date
+                                          ).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-4 py-2 whitespace-normal text-sm text-gray-800">
+                                          {flow.details || "—"}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <p className="text-gray-600">
+                                No process steps recorded.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-600">No process flows found.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;

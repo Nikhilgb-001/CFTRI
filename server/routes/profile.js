@@ -1,0 +1,71 @@
+import express from "express";
+import auth from "../middleware/auth.js";
+import User from "../models/User.js";
+import Admin from "../models/Admin.js";
+import Coordinator from "../models/Coordinator.js";
+
+const router = express.Router();
+
+// Get current user profile
+// server/routes/profile.js
+router.get("/", auth, async (req, res) => {
+  try {
+    console.log("Decoded token:", req.user); // Log the token payload
+    let user;
+    if (req.user.role === "user") {
+      user = await User.findById(req.user.id);
+    } else if (req.user.role === "admin") {
+      user = await Admin.findById(req.user.id);
+    } else if (req.user.role === "coordinator") {
+      user = await Coordinator.findById(req.user.id);
+    }
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (err) {
+    console.error("Error fetching profile:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Update profile
+router.put("/", auth, async (req, res) => {
+  try {
+    let updated;
+    if (req.user.role === "user") {
+      updated = await User.findByIdAndUpdate(req.user.id, req.body, {
+        new: true,
+      });
+    } else if (req.user.role === "admin") {
+      updated = await Admin.findByIdAndUpdate(req.user.id, req.body, {
+        new: true,
+      });
+    } else if (req.user.role === "coordinator") {
+      updated = await Coordinator.findByIdAndUpdate(req.user.id, req.body, {
+        new: true,
+      });
+    }
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Delete profile
+router.delete("/", auth, async (req, res) => {
+  try {
+    if (req.user.role === "user") {
+      await User.findByIdAndDelete(req.user.id);
+    } else if (req.user.role === "admin") {
+      await Admin.findByIdAndDelete(req.user.id);
+    } else if (req.user.role === "coordinator") {
+      await Coordinator.findByIdAndDelete(req.user.id);
+    }
+    res.json({ message: "Account deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+export default router;
