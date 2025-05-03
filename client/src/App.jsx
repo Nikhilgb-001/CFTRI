@@ -11,6 +11,7 @@ import UserRegister from "./pages/UserRegister";
 import CreateLead from "./pages/CreateLead";
 import AboutUs from "./pages/AboutUs";
 import ResetPassword from "./components/ResetPassword";
+import DeanDashboard from "./pages/DeanDashboard";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/create-lead" element={<CreateLead />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/dean" element={<DeanDashboard />} />
         </Routes>
       </div>
     </Router>

@@ -150,6 +150,7 @@ const CoordinatorDashboard = () => {
     actionType: "T.O (Technology Offer)",
     details: "",
     transactionId: "",
+    amount: { type: Number },
     date: new Date(),
   });
 
@@ -418,6 +419,7 @@ const CoordinatorDashboard = () => {
         actionType: "",
         details: "",
         transactionId: "",
+        amount: "",
         date: new Date(),
       });
 
@@ -556,17 +558,6 @@ const CoordinatorDashboard = () => {
             <ClipboardCheck className="h-5 w-5 mr-2" />
             Actions Log
           </button>
-          <button
-            onClick={() => setActiveTab("techTransfer")}
-            className={`flex-1 py-3 px-4 flex items-center justify-center font-medium ${
-              activeTab === "techTransfer"
-                ? "bg-blue-600 text-white"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <Clipboard className="h-5 w-5 mr-2 text-blue-600" />
-            Tech Transfer
-          </button>
         </div>
 
         {/* Dashboard Tab */}
@@ -574,13 +565,33 @@ const CoordinatorDashboard = () => {
           <div className="space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-xl shadow-md p-6">
+              {/* <div className="bg-white rounded-xl shadow-md p-6">
                 <div className="flex items-center">
                   <User className="h-6 w-6 mr-3 text-blue-600" />
                   <h3 className="text-lg font-semibold">Assigned Users</h3>
                 </div>
                 <p className="text-3xl font-bold mt-2">
                   {stats?.userCount || 0}
+                </p>
+              </div> */}
+
+              {/* after your Yearly ECF card… */}
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="flex items-center">
+                  <FileText className="h-6 w-6 mr-3 text-red-600" />
+                  <h3 className="text-lg font-semibold">Monthly EMF</h3>
+                </div>
+                <p className="text-3xl font-bold mt-2">
+                  ${stats?.monthlyEMF?.toLocaleString() || 0}
+                </p>
+              </div>
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="flex items-center">
+                  <FileText className="h-6 w-6 mr-3 text-red-600" />
+                  <h3 className="text-lg font-semibold">Yearly EMF</h3>
+                </div>
+                <p className="text-3xl font-bold mt-2">
+                  ${stats?.yearlyEMF?.toLocaleString() || 0}
                 </p>
               </div>
 
@@ -1086,19 +1097,33 @@ const CoordinatorDashboard = () => {
                   </div>
 
                   {newActionLog.actionType === "Payment Received" && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Transaction ID
-                      </label>
-                      <input
-                        type="text"
-                        name="transactionId"
-                        value={newActionLog.transactionId}
-                        onChange={handleActionLogChange}
-                        className="w-full p-2 border border-gray-300 rounded-lg"
-                        placeholder="Enter transaction ID"
-                      />
-                    </div>
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Transaction ID
+                        </label>
+                        <input
+                          type="text"
+                          name="transactionId"
+                          value={newActionLog.transactionId}
+                          onChange={handleActionLogChange}
+                          className="w-full p-2 border border-gray-300 rounded-lg"
+                          placeholder="Enter transaction ID"
+                        />
+                      </div>
+
+                      <div>
+                        <label>Amount</label>
+                        <input
+                          type="number"
+                          name="amount"
+                          value={newActionLog.amount}
+                          onChange={handleActionLogChange}
+                          className="w-full p-2 border rounded-lg"
+                          placeholder="Enter amount"
+                        />
+                      </div>
+                    </>
                   )}
 
                   {/* Date Picker shown for all action types */}
@@ -1175,51 +1200,18 @@ const CoordinatorDashboard = () => {
           </div>
         )}
 
-        {activeTab === "techTransfer" && (
+        {/* {activeTab === "techTransfer" && (
           <div className="space-y-6 bg-white rounded-xl shadow-md p-6">
             <h2 className="text-2xl font-semibold mb-4">
               Technology Transfer Process Flow
             </h2>
-
-            {/* Process Flow List */}
             <div className="space-y-4">
-              {/* {techFlow.map((item, idx) => (
-                <div key={idx} className="flex items-center space-x-4">
-                  <div className="w-1/3 font-medium">{item.step}</div>
-                  <DatePicker
-                    selected={item.date}
-                    onChange={(date) => {
-                      const newFlow = [...techFlow];
-                      newFlow[idx].date = date;
-                      setTechFlow(newFlow);
-                    }}
-                    className="p-2 border rounded-lg"
-                  />
-                  {item.note && (
-                    <span className="text-sm text-gray-500 italic">
-                      {item.note}
-                    </span>
-                  )}
-                </div>
-              ))} */}
               {techFlow.map((item, idx) => (
                 <div
                   key={idx}
                   className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start"
                 >
-                  {/* Step label */}
                   <div className="font-medium">{item.step}</div>
-
-                  {/* Date picker */}
-                  {/* <DatePicker
-                    selected={item.date}
-                    onChange={(date) => {
-                      const copy = [...techFlow];
-                      copy[idx].date = date;
-                      setTechFlow(copy);
-                    }}
-                    className="w-full p-2 border rounded-lg"
-                  /> */}
 
                   <DatePicker
                     selected={item.date || null}
@@ -1230,8 +1222,6 @@ const CoordinatorDashboard = () => {
                     }}
                     placeholderText="Select date"
                   />
-
-                  {/* Details text input */}
                   <input
                     type="text"
                     value={item.details}
@@ -1257,7 +1247,6 @@ const CoordinatorDashboard = () => {
               </button>
             </div>
 
-            {/* Actions */}
             <div className="flex space-x-3 pt-6">
               <button
                 onClick={downloadTechReport}
@@ -1275,7 +1264,7 @@ const CoordinatorDashboard = () => {
               </button>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

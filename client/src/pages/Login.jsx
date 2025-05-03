@@ -47,6 +47,7 @@ const Login = () => {
           onClose: () => {
             if (role === "admin") navigate("/admin");
             else if (role === "coordinator") navigate("/coordinator");
+            else if (role === "dean") navigate("/dean");
             else navigate("/profile");
           },
         });
@@ -78,6 +79,19 @@ const Login = () => {
           roleDescription: "Manage system settings and users",
           gradient: "from-red-100 to-orange-100",
         };
+
+      case "dean":
+        return {
+          primaryColor: "bg-purple-600",
+          primaryHover: "hover:bg-purple-700",
+          primaryFocus: "focus:ring-purple-300",
+          iconColor: "text-purple-600",
+          roleName: "Dean",
+          Icon: ShieldCheck, 
+          roleDescription: "Oversee coordinators and their tasks",
+          gradient: "from-purple-100 to-indigo-100",
+        };
+
       case "coordinator":
         return {
           primaryColor: "bg-emerald-500",

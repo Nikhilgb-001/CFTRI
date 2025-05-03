@@ -182,4 +182,33 @@ router.post("/login/coordinator", async (req, res) => {
   }
 });
 
+// Login dean
+router.post("/login/dean", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    // only allow coordinators who have been promoted to dean
+    const dean = await Coordinator.findOne({ email, role: "dean" });
+    if (!dean)
+      return res
+        .status(400)
+        .json({ message: "Dean not found or not promoted yet" });
+
+    const isMatch = await bcrypt.compare(password, dean.password);
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign(
+      { id: dean._id, role: "dean" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // return the dean record (you can alias it or omit sensitive fields)
+    res.json({ token, dean });
+  } catch (err) {
+    console.error("Dean login error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;

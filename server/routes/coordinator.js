@@ -2,18 +2,26 @@ import express from "express";
 import auth from "../middleware/auth.js";
 import User from "../models/User.js";
 import Lead from "../models/Lead.js";
+// import { generateExcelReport } from "../utils/excelGenerator.js";
 import {
-  generateExcelReport,
   generateTechTransferReport,
+  generateExcelReport,
 } from "../utils/excelGenerator.js";
 import ActionLog from "../models/ActionLog.js";
+
+import Coordinator from "../models/Coordinator.js";
+import bcrypt from "bcrypt";
 import TechTransferFlow from "../models/TechTransferFlow.js";
 
 const router = express.Router();
 
 // UPDATED: Allow access for both coordinators and admin users.
 const coordinatorOnly = (req, res, next) => {
-  if (req.user.role !== "coordinator" && req.user.role !== "admin") {
+  if (
+    req.user.role !== "coordinator" &&
+    req.user.role !== "admin" &&
+    req.user.role !== "dean"
+  ) {
     return res.status(403).json({ message: "Access denied" });
   }
   next();
@@ -25,6 +33,14 @@ router.get("/users", auth, coordinatorOnly, async (req, res) => {
     let users;
     if (req.user.role === "admin") {
       users = await User.find();
+    } else if (req.user.role === "dean") {
+      if (req.query.coordinatorId) {
+        users = await User.find({
+          "onboarding.details.coordinator": req.query.coordinatorId,
+        });
+      } else {
+        users = await User.find();
+      }
     } else {
       users = await User.find({
         "onboarding.details.coordinator": req.user.id,
@@ -57,6 +73,22 @@ router.get("/stats", auth, coordinatorOnly, async (req, res) => {
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
+    const paymentLogs = await ActionLog.find({
+      coordinator: req.user.id,
+      actionType: "Payment Received",
+    });
+
+    const monthlyEMF = paymentLogs
+      .filter((log) => {
+        const d = new Date(log.date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      })
+      .reduce((sum, log) => sum + (log.amount || 0), 0);
+
+    const yearlyEMF = paymentLogs
+      .filter((log) => new Date(log.date).getFullYear() === currentYear)
+      .reduce((sum, log) => sum + (log.amount || 0), 0);
+
     const monthlyECF = leads
       .filter(
         (lead) =>
@@ -81,6 +113,8 @@ router.get("/stats", auth, coordinatorOnly, async (req, res) => {
       monthlyECF,
       yearlyECF,
       taskStats,
+      monthlyEMF, // ← NEW
+      yearlyEMF,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -119,7 +153,8 @@ router.get("/report", auth, coordinatorOnly, async (req, res) => {
 // ACTION LOG routes
 router.post("/action-log", auth, coordinatorOnly, async (req, res) => {
   try {
-    const { actionType, category, details, transactionId, date } = req.body;
+    const { actionType, category, details, amount, transactionId, date } =
+      req.body;
 
     const actionLog = new ActionLog({
       coordinator: req.user.id,
@@ -127,6 +162,7 @@ router.post("/action-log", auth, coordinatorOnly, async (req, res) => {
       category,
       details,
       transactionId,
+      amount,
       date: date || new Date(),
     });
 
@@ -136,19 +172,6 @@ router.post("/action-log", auth, coordinatorOnly, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
-// router.get("/action-logs", auth, coordinatorOnly, async (req, res) => {
-//   try {
-//     const logs = await ActionLog.find({ coordinator: req.user.id }).sort({
-//       createdAt: -1,
-//     });
-//     res.json(logs);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// });
-
-// updated action logs
 
 router.get("/action-logs", auth, coordinatorOnly, async (req, res) => {
   try {
@@ -220,17 +243,6 @@ router.put(
     try {
       const { task, startDate, endDate } = req.body;
 
-      // if (new Date(startDate) < new Date()) {
-      //   return res
-      //     .status(400)
-      //     .json({ message: "Start date cannot be in the past" });
-      // }
-      // if (new Date(endDate) < new Date(startDate)) {
-      //   return res
-      //     .status(400)
-      //     .json({ message: "End date must be after start date" });
-      // }
-
       const start = new Date(startDate);
       const end = new Date(endDate);
 
@@ -276,99 +288,6 @@ router.put(
     }
   }
 );
-
-// NEW: Analytics endpoint aggregating various metrics
-// router.get("/analytics", auth, coordinatorOnly, async (req, res) => {
-//   try {
-//     let users, leads;
-//     if (req.user.role === "admin") {
-//       users = await User.find();
-//       leads = await Lead.find();
-//     } else {
-//       users = await User.find({
-//         "onboarding.details.coordinator": req.user.id,
-//       });
-//       leads = await Lead.find({
-//         "onboarding.details.coordinator": req.user.id,
-//       });
-//     }
-
-//     // 1. Task status counts
-//     const taskStats = {
-//       pending: users.filter((u) => u.taskStatus === "Pending").length,
-//       inProgress: users.filter((u) => u.taskStatus === "In Progress").length,
-//       completed: users.filter((u) => u.taskStatus === "Completed").length,
-//     };
-
-//     // 2. Technology details aggregation
-//     const techDetails = {};
-//     let totalAmounts = 0;
-
-//     users.forEach((user) => {
-//       const techs = (user.onboarding && user.onboarding.technologies) || [];
-//       const projectSubject =
-//         user.onboarding && user.onboarding.details
-//           ? user.onboarding.details.subject
-//           : null;
-//       techs.forEach((tech) => {
-//         if (tech.item) {
-//           if (!techDetails[tech.item]) {
-//             techDetails[tech.item] = {
-//               count: 0,
-//               totalAmount: 0,
-//               projects: new Set(),
-//             };
-//           }
-//           techDetails[tech.item].count += 1;
-//           techDetails[tech.item].totalAmount += tech.amount || 0;
-//           totalAmounts += tech.amount || 0;
-//           if (projectSubject) {
-//             techDetails[tech.item].projects.add(projectSubject);
-//           }
-//         }
-//       });
-//     });
-
-//     Object.keys(techDetails).forEach((key) => {
-//       techDetails[key].projects = Array.from(techDetails[key].projects);
-//     });
-
-//     // 3. Total payment received from leads (using leadValue)
-//     const totalPaymentReceived = leads.reduce(
-//       (sum, lead) => sum + (lead.onboarding?.details?.leadValue || 0),
-//       0
-//     );
-
-//     // 4. Weekly user logins (assumes a 'lastLogin' field on user)
-//     const weeklyLogins = {};
-//     for (let i = 0; i < 7; i++) {
-//       const date = new Date();
-//       date.setDate(date.getDate() - i);
-//       const dateKey = date.toISOString().split("T")[0];
-//       weeklyLogins[dateKey] = 0;
-//     }
-//     users.forEach((user) => {
-//       if (user.lastLogin) {
-//         const loginDate = new Date(user.lastLogin).toISOString().split("T")[0];
-//         if (weeklyLogins.hasOwnProperty(loginDate)) {
-//           weeklyLogins[loginDate]++;
-//         }
-//       }
-//     });
-
-//     res.json({
-//       taskStats,
-//       techDetails,
-//       totalAmounts,
-//       totalPaymentReceived,
-//       weeklyLogins,
-//     });
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// });
-
-// In your coordinator.js, update the analytics endpoint:
 
 router.get("/analytics", auth, coordinatorOnly, async (req, res) => {
   try {
@@ -461,112 +380,184 @@ router.get("/analytics", auth, coordinatorOnly, async (req, res) => {
   }
 });
 
-// router.get("/tech-transfer-report", auth, coordinatorOnly, async (req, res) => {
+// GET /coordinator/coordinators
+// — list every coordinator (for Dean dashboard)
+router.get("/coordinators", auth, coordinatorOnly, async (req, res) => {
+  try {
+    // only a Dean or Admin should hit this
+    if (req.user.role === "coordinator")
+      return res.status(403).json({ message: "Access denied" });
+
+    const all = await Coordinator.find().select("-password");
+    res.json(all);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST /coordinator/coordinators
+// — create a new coordinator (Dean only)
+router.post("/coordinators", auth, coordinatorOnly, async (req, res) => {
+  try {
+    if (req.user.role === "coordinator")
+      return res.status(403).json({ message: "Access denied" });
+
+    const { name, email, contact, password } = req.body;
+    const exists = await Coordinator.findOne({ email });
+    if (exists)
+      return res.status(400).json({ message: "Coordinator already exists" });
+
+    const hash = await bcrypt.hash(password, 10);
+    const coord = new Coordinator({ name, email, contact, password: hash });
+    await coord.save();
+    res.status(201).json({ ...coord.toObject(), password: undefined });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE /coordinator/coordinators/:id
+// — delete a coordinator (Dean only)
+router.delete("/coordinators/:id", auth, coordinatorOnly, async (req, res) => {
+  try {
+    if (req.user.role === "coordinator")
+      return res.status(403).json({ message: "Access denied" });
+
+    const deleted = await Coordinator.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Not found" });
+    res.json({ message: "Deleted", id: deleted._id });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
+  try {
+    console.log(
+      "\n📥 [tech-transfer] request body:",
+      JSON.stringify(req.body, null, 2)
+    );
+
+    const { steps } = req.body;
+    if (!Array.isArray(steps) || steps.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Must send non-empty array of steps" });
+    }
+
+    const mapped = steps.map((s, i) => {
+      if (!s.name || !s.date) {
+        throw new Error(`Step #${i + 1} missing name or date`);
+      }
+      return {
+        name: s.name,
+        date: new Date(s.date),
+        details: s.details || "",
+      };
+    });
+
+    const flow = new TechTransferFlow({ dean: req.user.id, steps: mapped });
+    const saved = await flow.save();
+
+    console.log("✅ [tech-transfer] saved flow:", saved._id);
+    res.status(201).json(saved);
+  } catch (err) {
+    // Print the full stack to your server console
+    console.error("❌ [tech-transfer] Error saving:", err.stack);
+
+    // In dev you can return the stack so you see it in the browser console
+    res.status(err.name === "ValidationError" ? 400 : 500).json({
+      message: err.message,
+      stack: err.stack,
+    });
+  }
+});
+
+// router.get("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
 //   try {
-//     // fetch same users as /report
-//     const users =
-//       req.user.role === "admin"
-//         ? await User.find()
-//         : await User.find({
-//             "onboarding.details.coordinator": req.user.id,
-//           });
-
-//     // your util should accept both users and the techFlow dates
-//     const reportBuffer = await generateTechTransferReport(
-//       users
-//       /* you could pass req.body.techFlow or pull from DB if you saved it */
-//     );
-
-//     res
-//       .set(
-//         "Content-Type",
-//         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-//       )
-//       .set(
-//         "Content-Disposition",
-//         "attachment; filename=tech-transfer-report.xlsx"
-//       )
-//       .send(reportBuffer);
+//     const flows = await TechTransferFlow.find({ dean: req.user.id }).sort({
+//       createdAt: -1,
+//     });
+//     res.json(flows);
 //   } catch (err) {
+//     console.error(err);
 //     res.status(500).json({ message: err.message });
 //   }
 // });
 
-// GET the saved flow for this coordinator
 router.get("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
-  // try {
-  //   const doc = await TechTransferFlow.findOne({ coordinator: req.user.id });
-  //   res.json(doc?.flows || []);
-  // } catch (err) {
-  //   res.status(500).json({ message: err.message });
-  // }
-
   try {
-    // if I'm an admin and passed a coordinatorId, use that; otherwise use my own
-    const coordId =
-      req.user.role === "admin" && req.query.coordinatorId
-        ? req.query.coordinatorId
-        : req.user.id;
-
-    // fetch ALL flow docs for that coordinator
-    const docs = await TechTransferFlow.find({ coordinator: coordId })
-      // if you want to show the user’s name & contact in the frontend table:
-      .populate(
-        "user",
-        "name onboarding.details.address onboarding.details.contact"
-      );
-
-    // send back an array of documents; each has { flows: [ … ], user }
-    res.json(docs);
+    const { coordinatorId } = req.query;
+    // If admin passed a coordinatorId, filter by that; otherwise default to req.user.id
+    const filter = coordinatorId
+      ? { dean: coordinatorId }
+      : { dean: req.user.id };
+    const flows = await TechTransferFlow.find(filter)
+      .populate("dean", "name email") // populate dean's name & email
+      .sort({ createdAt: -1 });
+    res.json(flows);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
 
-// POST (or upsert) the flow
-router.post("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
-  try {
-    const { flows } = req.body; // array of { step, date, details }
-    const doc = await TechTransferFlow.findOneAndUpdate(
-      { coordinator: req.user.id },
-      { flows },
-      { new: true, upsert: true }
-    );
-    res.json(doc.flows);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+router.delete(
+  "/tech-transfer-flow/:id",
+  auth,
+  coordinatorOnly,
+  async (req, res) => {
+    try {
+      // Allow admin to delete any, otherwise ensure dean owns it
+      const filter =
+        req.user.role === "admin"
+          ? { _id: req.params.id }
+          : { _id: req.params.id, dean: req.user.id };
+
+      const deleted = await TechTransferFlow.findOneAndDelete(filter);
+      if (!deleted) {
+        return res.status(404).json({ message: "Flow not found or not yours" });
+      }
+      res.json({ message: "Deleted", id: deleted._id });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: err.message });
+    }
   }
-});
+);
 
 router.get("/tech-transfer-report", auth, coordinatorOnly, async (req, res) => {
   try {
-    // allow admin to pass ?coordinatorId=
-    const coordId =
-      req.user.role === "admin" && req.query.coordinatorId
-        ? req.query.coordinatorId
-        : req.user.id;
+    const { flowIds } = req.query;
+    if (!flowIds) {
+      return res
+        .status(400)
+        .json({ message: "Must provide flowIds query parameter" });
+    }
+    const ids = flowIds.split(",");
+    // fetch only this dean’s flows, and populate dean’s contact info
+    const flows = await TechTransferFlow.find({
+      dean: req.user.id,
+      _id: { $in: ids },
+    }).populate(
+      "dean",
+      "name onboarding.details.address onboarding.details.contact"
+    );
 
-    // fetch and populate the user who did each flow
-    const docs = await TechTransferFlow.find({ coordinator: coordId })
-      .populate("coordinator", "name")
-      .populate(
-        "user",
-        "name onboarding.details.address onboarding.details.contact"
-      );
-
-    const buffer = await generateTechTransferReport(docs); // util in excelGenerator.js :contentReference[oaicite:0]{index=0}&#8203;:contentReference[oaicite:1]{index=1}
-
+    // generate and send the XLSX
+    const buffer = await generateTechTransferReport(flows);
     res
-      .setHeader(
+      .header(
         "Content-Type",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       )
-      .setHeader(
+      .header(
         "Content-Disposition",
-        `attachment; filename=tech-transfer-report.xlsx`
+        "attachment; filename=tech-transfer-report.xlsx"
       )
       .send(buffer);
   } catch (err) {
+    console.error("❌ tech-transfer-report error:", err.stack);
     res.status(500).json({ message: err.message });
   }
 });

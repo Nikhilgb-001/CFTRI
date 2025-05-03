@@ -16,8 +16,9 @@ router.get("/", auth, async (req, res) => {
       user = await User.findById(req.user.id);
     } else if (req.user.role === "admin") {
       user = await Admin.findById(req.user.id);
-    } else if (req.user.role === "coordinator") {
-      user = await Coordinator.findById(req.user.id);
+    } else if (req.user.role === "coordinator" || req.user.role === "dean") {
+      // user = await Coordinator.findById(req.user.id);
+      user = await Coordinator.findById(req.user.id).select("-password");
     }
     if (!user) {
       return res.status(404).json({ message: "User not found" });

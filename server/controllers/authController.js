@@ -72,7 +72,18 @@ export const loginCoordinator = async (req, res) => {
     if (coordinator.password !== password) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-    res.status(200).json(coordinator);
+    // res.status(200).json(coordinator);
+    res.status(200).json({
+      _id: coordinator._id,
+      name: coordinator.name,
+      email: coordinator.email,
+      role: coordinator.role, // <-- new
+      token: generateToken(coordinator),
+    });
+
+    console.log("coordinator response", res);
+
+    console.log(coordinator.role);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
