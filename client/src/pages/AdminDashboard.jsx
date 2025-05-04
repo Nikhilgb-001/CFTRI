@@ -62,6 +62,34 @@ const MemoizedLineChart = React.memo(({ data, options }) => (
   <Line data={data} options={options} />
 ));
 
+// in AdminDashboard component
+const downloadAnnualReport = async () => {
+  if (!techFlows.length) return;
+  try {
+    const flowIds = techFlows.map((f) => f._id).join(",");
+    const res = await axios.get(
+      "http://localhost:5000/coordinator/tech-transfer-report",
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { flowIds },
+        responseType: "blob",
+      }
+    );
+    const blob = new Blob([res.data], { type: res.headers["content-type"] });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "annual-tech-transfer-report.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Error downloading report:", err);
+    alert("Failed to download report");
+  }
+};
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState(1);
   const [users, setUsers] = useState([]);
@@ -208,25 +236,6 @@ const AdminDashboard = () => {
     };
   }, [token]);
 
-  // Fetch coordinator analytics data for Coordinator Analytics tab
-  // const fetchCoordinatorAnalytics = useCallback(async () => {
-  //   try {
-  //     setIsCoordinatorAnalyticsRefreshing(true);
-  //     const res = await axios.get(
-  //       "http://localhost:5000/coordinator/analytics",
-  //       {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       }
-  //     );
-  //     setCoordinatorAnalytics(res.data);
-  //     setCoordinatorAnalyticsLoaded(true);
-  //   } catch (err) {
-  //     console.error("Error fetching coordinator analytics:", err);
-  //   } finally {
-  //     setIsCoordinatorAnalyticsRefreshing(false);
-  //   }
-  // }, [token]);
-
   const fetchCoordinatorAnalytics = useCallback(async () => {
     if (!selectedCoordinator) return; // Do nothing if no coordinator is selected
     try {
@@ -314,14 +323,6 @@ const AdminDashboard = () => {
     }
   }, [activeTab, token]);
 
-  // Fetch chart data when Analytics tab (tab 2) is active or not loaded
-  // useEffect(() => {
-  //   if (activeTab === 2 || !chartDataLoaded) {
-  //     fetchChartData();
-  //   }
-  // }, [activeTab, chartDataLoaded, fetchChartData]);
-
-  // Fetch coordinator analytics when the new tab (tab 5) is active
   useEffect(() => {
     if (activeTab === 5 || !coordinatorAnalyticsLoaded) {
       fetchCoordinatorAnalytics();
@@ -477,20 +478,7 @@ const AdminDashboard = () => {
             <Users className="h-5 w-5 mr-2" />
             User Details
           </button>
-          {/* <button
-            onClick={() => {
-              setActiveTab(2);
-              setShowCreateLeadForm(false);
-            }}
-            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
-              activeTab === 2
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-blue-600 hover:bg-blue-50"
-            }`}
-          >
-            <BarChart2 className="h-5 w-5 mr-2" />
-            Analytics
-          </button> */}
+
           <button
             onClick={() => {
               setActiveTab(3);
@@ -1347,14 +1335,18 @@ const AdminDashboard = () => {
                   >
                     {/* Coordinator Info & Actions */}
                     <div className="p-4 bg-gray-50 flex justify-between items-center">
-                      {/* <div>
-                        <h3 className="font-semibold text-gray-800">
-                          {flow.dean?.name || "—"}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {flow.dean?.email || "—"}
-                        </p>
-                      </div> */}
+                      <button
+                        onClick={downloadAnnualReport}
+                        disabled={!techFlows.length}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium 
+        ${
+          techFlows.length
+            ? "bg-green-600 text-white hover:bg-green-700"
+            : "bg-gray-200 text-gray-500 cursor-not-allowed"
+        } transition-colors`}
+                      >
+                        Download Annual Report
+                      </button>
                     </div>
 
                     {/* Steps Table */}
@@ -1444,40 +1436,6 @@ const AdminDashboard = () => {
                         <td className="px-4 py-3 text-sm text-gray-800">
                           {coord.contact}
                         </td>
-                        {/* <td className="px-4 py-3 text-sm text-gray-800">
-                          {coord.dean?.name || "—"}
-                        </td> */}
-                        {/* <td className="px-4 py-3 text-sm text-gray-800">
-                          <select
-                            value={coord.dean?._id || ""}
-                            onChange={async (e) => {
-                              const deanId = e.target.value;
-                              await axios.put(
-                                `http://localhost:5000/admin/coordinators/${coord._id}/assign-dean`,
-                                { deanId },
-                                {
-                                  headers: { Authorization: `Bearer ${token}` },
-                                }
-                              );
-                              // refresh list
-                              const res = await axios.get(
-                                "http://localhost:5000/admin/coordinators",
-                                {
-                                  headers: { Authorization: `Bearer ${token}` },
-                                }
-                              );
-                              setAllCoordinators(res.data);
-                            }}
-                            className="border p-1 rounded"
-                          >
-                            <option value="">Unassigned</option>
-                            {deans.map((dean) => (
-                              <option key={dean._id} value={dean._id}>
-                                {dean.name}
-                              </option>
-                            ))}
-                          </select>
-                        </td> */}
 
                         <td className="px-4 py-3 text-sm">
                           {coord.role === "coordinator" ? (
