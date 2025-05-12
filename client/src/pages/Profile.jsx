@@ -694,6 +694,33 @@ const Profile = () => {
                             value:
                               user.onboarding.details.place || "Not provided",
                           },
+                          {
+                            icon: (
+                              <MapPin className="h-5 w-5 text-indigo-600" />
+                            ),
+                            label: "Address",
+                            value:
+                              user.onboarding.details.address || "Not provided",
+                          },
+                          {
+                            icon: <User className="h-5 w-5 text-indigo-600" />,
+                            label: "Gender",
+                            value:
+                              user.onboarding.details.gender || "Not provided",
+                          },
+                          {
+                            icon: <Globe className="h-5 w-5 text-indigo-600" />,
+                            label: "Country",
+                            value:
+                              user.onboarding.details.country || "Not provided",
+                          },
+                          {
+                            icon: <Tag className="h-5 w-5 text-indigo-600" />,
+                            label: "Category",
+                            value:
+                              user.onboarding.details.category ||
+                              "Not provided",
+                          },
                         ].map((item, index) => (
                           <div
                             key={index}
@@ -863,7 +890,7 @@ const Profile = () => {
                               {/* Discussion Matter */}
                               <tr className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                                  Broad Area
+                                  Discussion Matter
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                                   {user.onboarding.details.discussionMatter}
@@ -873,7 +900,7 @@ const Profile = () => {
                               {/* Specific Option */}
                               <tr className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                                  Type
+                                  Category
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                                   {user.onboarding.details.specificOption}
@@ -883,7 +910,7 @@ const Profile = () => {
                               {/* Type */}
                               <tr className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                                  Commodity
+                                  Type
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                                   {user.onboarding.details.type}
@@ -1012,6 +1039,75 @@ const Profile = () => {
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
                           />
                         </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2 items-center">
+                            <MapPin className="h-4 w-4 mr-2" /> Address
+                          </label>
+                          <input
+                            type="text"
+                            name="onboarding.details.address"
+                            value={
+                              editFormData.onboarding.details.address || ""
+                            }
+                            onChange={handleEditChange}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Enter address"
+                          />
+                        </div>
+                        {/* ⬆️ Gender */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <User className="h-4 w-4 mr-2" /> Gender
+                          </label>
+                          <select
+                            name="onboarding.details.gender"
+                            value={editFormData.onboarding.details.gender || ""}
+                            onChange={handleEditChange}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="">Select gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        {/* ⬆️ Country */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <Globe className="h-4 w-4 mr-2" /> Country
+                          </label>
+                          <input
+                            type="text"
+                            name="onboarding.details.country"
+                            value={
+                              editFormData.onboarding.details.country || ""
+                            }
+                            onChange={handleEditChange}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Enter country"
+                          />
+                        </div>
+                        {/* ⬆️ Category */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <Tag className="h-4 w-4 mr-2" /> Category
+                          </label>
+                          <select
+                            name="onboarding.details.category"
+                            value={
+                              editFormData.onboarding.details.category || ""
+                            }
+                            onChange={handleEditChange}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="">Select category</option>
+                            <option value="SC/ST">SC/ST</option>
+                            <option value="General">General</option>
+                            <option value="OBC">OBC</option>
+                          </select>
+                        </div>
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
                             <Calendar className="h-4 w-4 mr-2" />
@@ -1156,13 +1252,13 @@ const Profile = () => {
                             let label = "";
                             let options = [];
                             if (idx === 0) {
-                              label = "Broad Area";
+                              label = "Discussion Matter	";
                               options = broadAreaOptions;
                             } else if (idx === 1) {
-                              label = "Commodity";
+                              label = "Category";
                               options = commoditiesOptions;
                             } else if (idx === 2) {
-                              label = "Keyword";
+                              label = "Type";
                               options = keywordsOptions;
                             }
                             return (

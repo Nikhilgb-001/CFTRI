@@ -41,6 +41,7 @@ import {
   Building,
   Edit2,
   ShieldCheck,
+  Globe,
 } from "lucide-react";
 
 ChartJS.register(
@@ -685,7 +686,7 @@ const AdminDashboard = () => {
                               <Tag className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium text-gray-500">
-                                  Specific Option
+                                  Category
                                 </p>
                                 <p className="text-gray-800">
                                   {user.onboarding?.details?.specificOption ||
@@ -719,22 +720,58 @@ const AdminDashboard = () => {
                                 </p>
                               </div>
                             </div>
-
-                            {/* Design Improvement */}
                             <div className="flex items-start">
-                              <Edit2 className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
+                              <MapPin className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium text-gray-500">
-                                  Design Improvement
+                                  Address
                                 </p>
                                 <p className="text-gray-800">
-                                  {user.onboarding?.details
-                                    ?.designImprovement || "N/A"}
+                                  {user.onboarding?.details?.address || "N/A"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Gender */}
+                            <div className="flex items-start">
+                              <User className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                  Gender
+                                </p>
+                                <p className="text-gray-800">
+                                  {user.onboarding?.details?.gender || "N/A"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Country */}
+                            <div className="flex items-start">
+                              <Globe className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                  Country
+                                </p>
+                                <p className="text-gray-800">
+                                  {user.onboarding?.details?.country || "N/A"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Category */}
+                            <div className="flex items-start">
+                              <Tag className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-500">
+                                  Category
+                                </p>
+                                <p className="text-gray-800">
+                                  {user.onboarding?.details?.category || "N/A"}
                                 </p>
                               </div>
                             </div>
                           </div>
-                          {user.onboarding?.technologies?.length > 0 && (
+                          {/* {user.onboarding?.technologies?.length > 0 && (
                             <div className="mb-4">
                               <h4 className="font-medium text-gray-800 mb-2 flex items-center">
                                 <Cpu className="h-5 w-5 mr-2 text-blue-600" />
@@ -771,8 +808,59 @@ const AdminDashboard = () => {
                                             </td>
                                           </tr>
                                         );
-                                      }
-                                    )}
+                                     }
+                                   )}
+                                 </tbody>
+                               </table>
+                             </div>
+                           </div>
+                         )} */}
+                          +{" "}
+                          {user.onboarding?.details && (
+                            <div className="mb-4">
+                              <h4 className="font-medium text-gray-800 mb-2 flex items-center">
+                                <Cpu className="h-5 w-5 mr-2 text-blue-600" />
+                                Details
+                              </h4>
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Field
+                                      </th>
+                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Value
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="bg-white divide-y divide-gray-200">
+                                    <tr>
+                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                        Discussion Matter
+                                      </td>
+                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                        {user.onboarding.details
+                                          .discussionMatter || "N/A"}
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                        Category
+                                      </td>
+                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                        {user.onboarding.details
+                                          .specificOption || "N/A"}
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                        Type
+                                      </td>
+                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
+                                        {user.onboarding.details.type || "N/A"}
+                                      </td>
+                                    </tr>
                                   </tbody>
                                 </table>
                               </div>
@@ -1505,10 +1593,12 @@ const AdminDashboard = () => {
                               }}
                               className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
                             >
-                              Promote to Dean
+                              Promote to TT Coordinator
                             </button>
                           ) : (
-                            <span className="text-gray-500">Already Dean</span>
+                            <span className="text-gray-500">
+                              Already assigned
+                            </span>
                           )}
                         </td>
                       </tr>

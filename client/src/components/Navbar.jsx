@@ -1,29 +1,3 @@
-// import React from "react";
-// import { Link } from "react-router-dom";
-
-// const Navbar = () => {
-//   return (
-//     <nav className="bg-white shadow p-4">
-//       <div className="container mx-auto flex justify-between">
-//         <Link to="/" className="font-bold">
-//           CFTRI
-//         </Link>
-//         <div>
-//           <Link to="/login/user" className="mr-4">
-//             User Login
-//           </Link>
-//           <Link to="/login/admin" className="mr-4">
-//             Admin Login
-//           </Link>
-//           <Link to="/login/coordinator">Coordinator Login</Link>
-//         </div>
-//       </div>
-//     </nav>
-//   );
-// };
-
-// export default Navbar;
-
 import React from "react";
 import { Link } from "react-router-dom";
 import {
@@ -36,6 +10,7 @@ import {
   FlaskConical,
   Projector,
   Camera,
+  ProjectorIcon,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -70,28 +45,12 @@ const Navbar = () => {
             </Link>
 
             <Link
-              to="/profile"
+              to="/userRegister"
               className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors"
             >
               <Camera className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">User Profile</span>
+              <span className="hidden sm:inline">User Register</span>
             </Link>
-
-            {/* <Link
-              to="/login/admin"
-              className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-            >
-              <Shield className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Admin Login</span>
-            </Link> */}
-
-            {/* <Link
-              to="/login/coordinator"
-              className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-            >
-              <UserCog className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Coordinator Login</span>
-            </Link> */}
 
             {/* Optional: Add other navigation items */}
             <Link
@@ -100,6 +59,14 @@ const Navbar = () => {
             >
               <Bookmark className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">About</span>
+            </Link>
+
+            <Link
+              to="/technologies"
+              className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+            >
+              <ProjectorIcon className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Technologies</span>
             </Link>
           </div>
         </div>

@@ -12,12 +12,13 @@ import CreateLead from "./pages/CreateLead";
 import AboutUs from "./pages/AboutUs";
 import ResetPassword from "./components/ResetPassword";
 import DeanDashboard from "./pages/DeanDashboard";
+import TechnologiesPage from "./pages/TechnologiesPage";
 
 function App() {
   return (
     <Router>
       <Navbar />
-      <div className="container mx-auto p-4">
+      <div className=" mx-auto p-4">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login/:role" element={<Login />} />
@@ -30,6 +31,7 @@ function App() {
           <Route path="/about" element={<AboutUs />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dean" element={<DeanDashboard />} />
+          <Route path="/technologies" element={<TechnologiesPage />} />
         </Routes>
       </div>
     </Router>

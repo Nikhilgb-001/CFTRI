@@ -150,7 +150,8 @@ const CoordinatorDashboard = () => {
     actionType: "T.O (Technology Offer)",
     details: "",
     transactionId: "",
-    amount: { type: Number },
+    // amount: { type: Number },
+    amount: "",
     date: new Date(),
   });
 
@@ -398,11 +399,20 @@ const CoordinatorDashboard = () => {
     }
   };
 
+  // const handleActionLogChange = (e) => {
+  //   setNewActionLog({
+  //     ...newActionLog,
+  //     [e.target.name]: e.target.value,
+  //   });
+  // };
+
   const handleActionLogChange = (e) => {
-    setNewActionLog({
-      ...newActionLog,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setNewActionLog((prev) => ({
+      ...prev,
+      // [name]: value,
+      [name]: name === "amount" ? Number(value) : value,
+    }));
   };
 
   const handleActionLogSubmit = async () => {
