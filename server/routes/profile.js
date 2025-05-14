@@ -53,6 +53,15 @@ router.put("/", auth, async (req, res) => {
   }
 });
 
+router.get("/profile/tech-transfer-logs", auth, async (req, res) => {
+  try {
+    const u = await User.findById(req.user.id).select("techTransferLogs");
+    res.json(u.techTransferLogs || []);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Delete profile
 router.delete("/", auth, async (req, res) => {
   try {

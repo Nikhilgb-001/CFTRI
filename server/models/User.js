@@ -70,6 +70,16 @@ const userSchema = new mongoose.Schema(
         },
       ],
 
+      techTransferLogs: [
+        {
+          actionType: String,
+          date: Date,
+          details: String,
+          transactionId: String,
+          amount: Number,
+        },
+      ],
+
       technologies: [
         {
           // For storing the specific product/technology selected

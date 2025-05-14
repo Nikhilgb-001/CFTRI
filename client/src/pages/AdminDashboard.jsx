@@ -69,6 +69,8 @@ const AdminDashboard = () => {
   const [techFlows, setTechFlows] = useState([]);
   const [isLoadingTechFlows, setIsLoadingTechFlows] = useState(false);
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
+  const [userLogs, setUserLogs] = useState({});
+  const [loadingUserLogs, setLoadingUserLogs] = useState({});
 
   const [deans, setDeans] = useState([]);
   const [allCoordinators, setAllCoordinators] = useState([]);
@@ -107,11 +109,21 @@ const AdminDashboard = () => {
   const [isActionLogsLoading, setIsActionLogsLoading] = useState(false);
 
   // Toggle expansion for user details
+  // const toggleUserExpansion = (userId) => {
+  //   setExpandedUsers((prev) => ({
+  //     ...prev,
+  //     [userId]: !prev[userId],
+  //   }));
+  // };
+
   const toggleUserExpansion = (userId) => {
-    setExpandedUsers((prev) => ({
-      ...prev,
-      [userId]: !prev[userId],
-    }));
+    const willExpand = !expandedUsers[userId];
+    setExpandedUsers((prev) => ({ ...prev, [userId]: willExpand }));
+
+    // kick off fetch immediately if we're opening
+    if (willExpand) {
+      fetchUserLogs(userId);
+    }
   };
 
   // Toggle expansion for lead details
@@ -227,6 +239,26 @@ const AdminDashboard = () => {
   //     setIsCoordinatorAnalyticsRefreshing(false);
   //   }
   // }, [token]);
+
+  const fetchUserLogs = useCallback(
+    async (userId) => {
+      // avoid re-fetch if already loading or loaded
+      if (loadingUserLogs[userId] || userLogs[userId]) return;
+      setLoadingUserLogs((l) => ({ ...l, [userId]: true }));
+      try {
+        const { data } = await axios.get(
+          `http://localhost:5000/admin/users/${userId}/action-logs`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setUserLogs((prev) => ({ ...prev, [userId]: data }));
+      } catch (err) {
+        console.error("fetchUserLogs error:", err);
+      } finally {
+        setLoadingUserLogs((l) => ({ ...l, [userId]: false }));
+      }
+    },
+    [token, loadingUserLogs, userLogs]
+  );
 
   const fetchCoordinatorAnalytics = useCallback(async () => {
     if (!selectedCoordinator) return; // Do nothing if no coordinator is selected
@@ -771,51 +803,57 @@ const AdminDashboard = () => {
                               </div>
                             </div>
                           </div>
-                          {/* {user.onboarding?.technologies?.length > 0 && (
-                            <div className="mb-4">
-                              <h4 className="font-medium text-gray-800 mb-2 flex items-center">
-                                <Cpu className="h-5 w-5 mr-2 text-blue-600" />
-                                Technologies
-                              </h4>
-                              <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                  <thead className="bg-gray-50">
-                                    <tr>
-                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Category
-                                      </th>
-                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Selected Technology
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="bg-white divide-y divide-gray-200">
-                                    {user.onboarding.technologies.map(
-                                      (tech, idx) => {
-                                        let category = "";
-                                        if (idx === 0) category = "Broad Area";
-                                        else if (idx === 1)
-                                          category = "Commodity";
-                                        else if (idx === 2)
-                                          category = "Keyword";
-                                        return (
-                                          <tr key={idx}>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
-                                              {category}
-                                            </td>
-                                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
-                                              {tech.item || "Not selected"}
-                                            </td>
-                                          </tr>
-                                        );
-                                     }
-                                   )}
-                                 </tbody>
-                               </table>
-                             </div>
-                           </div>
-                         )} */}
-                          +{" "}
+
+                          <div className="mt-4">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">
+                              Action Logs
+                            </h4>
+
+                            {loadingUserLogs[user._id] ? (
+                              <p className="text-sm text-gray-400">Loading…</p>
+                            ) : userLogs[user._id] ? (
+                              userLogs[user._id].length > 0 ? (
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                  {userLogs[user._id].map((log) => (
+                                    <div
+                                      key={log._id}
+                                      className="border rounded p-2 bg-gray-50"
+                                    >
+                                      <div className="flex justify-between items-baseline">
+                                        <span className="font-medium">
+                                          {log.actionType}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                          {new Date(
+                                            log.date
+                                          ).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                      {log.details && (
+                                        <p className="text-sm text-gray-700 mt-1">
+                                          {log.details}
+                                        </p>
+                                      )}
+                                      {log.transactionId && (
+                                        <p className="text-xs text-gray-600 mt-1">
+                                          Txn: {log.transactionId}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-500">
+                                  No actions logged for this user.
+                                </p>
+                              )
+                            ) : (
+                              <p className="text-sm text-gray-500">
+                                (Click the header to load action logs.)
+                              </p>
+                            )}
+                          </div>
+
                           {user.onboarding?.details && (
                             <div className="mb-4">
                               <h4 className="font-medium text-gray-800 mb-2 flex items-center">
@@ -1532,40 +1570,6 @@ const AdminDashboard = () => {
                         <td className="px-4 py-3 text-sm text-gray-800">
                           {coord.contact}
                         </td>
-                        {/* <td className="px-4 py-3 text-sm text-gray-800">
-                          {coord.dean?.name || "—"}
-                        </td> */}
-                        {/* <td className="px-4 py-3 text-sm text-gray-800">
-                          <select
-                            value={coord.dean?._id || ""}
-                            onChange={async (e) => {
-                              const deanId = e.target.value;
-                              await axios.put(
-                                `http://localhost:5000/admin/coordinators/${coord._id}/assign-dean`,
-                                { deanId },
-                                {
-                                  headers: { Authorization: `Bearer ${token}` },
-                                }
-                              );
-                              // refresh list
-                              const res = await axios.get(
-                                "http://localhost:5000/admin/coordinators",
-                                {
-                                  headers: { Authorization: `Bearer ${token}` },
-                                }
-                              );
-                              setAllCoordinators(res.data);
-                            }}
-                            className="border p-1 rounded"
-                          >
-                            <option value="">Unassigned</option>
-                            {deans.map((dean) => (
-                              <option key={dean._id} value={dean._id}>
-                                {dean.name}
-                              </option>
-                            ))}
-                          </select>
-                        </td> */}
 
                         <td className="px-4 py-3 text-sm">
                           {coord.role === "coordinator" ? (

@@ -3,6 +3,7 @@ import auth from "../middleware/auth.js";
 import User from "../models/User.js";
 import Coordinator from "../models/Coordinator.js";
 import Dean from "../models/Dean.js";
+import ActionLog from "../models/ActionLog.js";
 
 const router = express.Router();
 
@@ -226,6 +227,23 @@ router.get("/deans/:deanId/coordinators", auth, adminOnly, async (req, res) => {
     const list = await Coordinator.find({ dean: req.params.deanId });
     res.json(list);
   } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.get("/users/:userId/action-logs", auth, adminOnly, async (req, res) => {
+  try {
+    const logs = await ActionLog.find({ userId: req.params.userId })
+      .sort({ date: -1 })
+      .lean();
+    console.log(
+      `[action-logs] for ${req.params.userId}:`,
+      logs.length,
+      "entries"
+    );
+    res.json(logs);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });

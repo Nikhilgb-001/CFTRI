@@ -7,6 +7,10 @@ const actionLogSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     actionType: { type: String, required: true },
     category: { type: String, required: true, enum: ["Technology", "Project"] },
     details: { type: String },

@@ -151,11 +151,20 @@ router.get("/report", auth, coordinatorOnly, async (req, res) => {
 });
 
 // ACTION LOG routes
+// routes/coordinator.js (or wherever you define action-log)
 router.post("/action-log", auth, coordinatorOnly, async (req, res) => {
   try {
-    const { actionType, category, details, amount, transactionId, date } =
-      req.body;
+    const {
+      actionType,
+      category,
+      details,
+      amount,
+      transactionId,
+      date,
+      userId,
+    } = req.body;
 
+    // 1) Save the ActionLog document
     const actionLog = new ActionLog({
       coordinator: req.user.id,
       actionType,
@@ -164,34 +173,72 @@ router.post("/action-log", auth, coordinatorOnly, async (req, res) => {
       transactionId,
       amount,
       date: date || new Date(),
+      userId: userId || null,
     });
-
     await actionLog.save();
+
+    // 2) If it's a tech-transfer entry, push into the user's array
+    if (category === "Technology" && userId) {
+      await User.findByIdAndUpdate(userId, {
+        $push: {
+          techTransferLogs: {
+            actionType,
+            date: date || new Date(),
+            details,
+            transactionId,
+            amount,
+          },
+        },
+      });
+    }
+
+    // 3) Return the new log
     res.status(201).json(actionLog);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
 
+// router.get("/action-logs", auth, coordinatorOnly, async (req, res) => {
+//   try {
+//     let query = {};
+//     // If the user is an admin and has provided a coordinatorId in the query parameters,
+//     // use that for filtering. Otherwise, restrict to the logged-in user's ID.
+//     if (req.user.role === "admin" && req.query.coordinatorId) {
+//       query.coordinator = req.query.coordinatorId;
+//     } else {
+//       query.coordinator = req.user.id;
+//     }
+
+//     const logs = await ActionLog.find(query).sort({ createdAt: -1 });
+//     res.json(logs);
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// });
+
+// UPDATE task status for a user assigned to the logged-in coordinator
+
 router.get("/action-logs", auth, coordinatorOnly, async (req, res) => {
   try {
     let query = {};
-    // If the user is an admin and has provided a coordinatorId in the query parameters,
-    // use that for filtering. Otherwise, restrict to the logged-in user's ID.
     if (req.user.role === "admin" && req.query.coordinatorId) {
       query.coordinator = req.query.coordinatorId;
     } else {
       query.coordinator = req.user.id;
     }
 
-    const logs = await ActionLog.find(query).sort({ createdAt: -1 });
+    const logs = await ActionLog.find(query)
+      .populate("userId", "name email") // Add this line to populate user data
+      .sort({ createdAt: -1 });
+
     res.json(logs);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// UPDATE task status for a user assigned to the logged-in coordinator
 router.put("/users/:userId/status", auth, coordinatorOnly, async (req, res) => {
   try {
     const { status } = req.body;
@@ -431,59 +478,100 @@ router.delete("/coordinators/:id", auth, coordinatorOnly, async (req, res) => {
   }
 });
 
-router.post("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
-  try {
-    console.log(
-      "\n📥 [tech-transfer] request body:",
-      JSON.stringify(req.body, null, 2)
-    );
+// router.post("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
+//   try {
+//     console.log(
+//       "\n📥 [tech-transfer] request body:",
+//       JSON.stringify(req.body, null, 2)
+//     );
 
-    const { steps } = req.body;
-    if (!Array.isArray(steps) || steps.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Must send non-empty array of steps" });
+//     const { steps } = req.body;
+//     if (!Array.isArray(steps) || steps.length === 0) {
+//       return res
+//         .status(400)
+//         .json({ message: "Must send non-empty array of steps" });
+//     }
+
+//     const mapped = steps.map((s, i) => {
+//       if (!s.name || !s.date) {
+//         throw new Error(`Step #${i + 1} missing name or date`);
+//       }
+//       return {
+//         name: s.name,
+//         date: new Date(s.date),
+//         details: s.details || "",
+//       };
+//     });
+
+//     const flow = new TechTransferFlow({ dean: req.user.id, steps: mapped });
+//     const saved = await flow.save();
+
+//     console.log("✅ [tech-transfer] saved flow:", saved._id);
+//     res.status(201).json(saved);
+//   } catch (err) {
+//     // Print the full stack to your server console
+//     console.error("❌ [tech-transfer] Error saving:", err.stack);
+
+//     // In dev you can return the stack so you see it in the browser console
+//     res.status(err.name === "ValidationError" ? 400 : 500).json({
+//       message: err.message,
+//       stack: err.stack,
+//     });
+//   }
+// });
+
+router.post("/action-log", auth, coordinatorOnly, async (req, res) => {
+  try {
+    const {
+      actionType,
+      category,
+      details,
+      amount,
+      transactionId,
+      date,
+      userId,
+    } = req.body;
+
+    const actionLog = new ActionLog({
+      coordinator: req.user.id,
+      actionType,
+      category,
+      details,
+      transactionId,
+      amount,
+      date: date || new Date(),
+      userId: userId || null, // Add user reference
+    });
+
+    await actionLog.save();
+
+    // If this is a tech transfer action, update the user's tech transfer status
+    if (category === "Technology" && userId) {
+      await User.findByIdAndUpdate(userId, {
+        $push: {
+          techTransferLogs: {
+            actionType,
+            date: date || new Date(),
+            details,
+            transactionId,
+            amount,
+          },
+        },
+      });
     }
 
-    const mapped = steps.map((s, i) => {
-      if (!s.name || !s.date) {
-        throw new Error(`Step #${i + 1} missing name or date`);
-      }
-      return {
-        name: s.name,
-        date: new Date(s.date),
-        details: s.details || "",
-      };
-    });
-
-    const flow = new TechTransferFlow({ dean: req.user.id, steps: mapped });
-    const saved = await flow.save();
-
-    console.log("✅ [tech-transfer] saved flow:", saved._id);
-    res.status(201).json(saved);
+    res.status(201).json(actionLog);
   } catch (err) {
-    // Print the full stack to your server console
-    console.error("❌ [tech-transfer] Error saving:", err.stack);
-
-    // In dev you can return the stack so you see it in the browser console
-    res.status(err.name === "ValidationError" ? 400 : 500).json({
-      message: err.message,
-      stack: err.stack,
-    });
+    res.status(500).json({ message: err.message });
   }
 });
 
-// router.get("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
-//   try {
-//     const flows = await TechTransferFlow.find({ dean: req.user.id }).sort({
-//       createdAt: -1,
-//     });
-//     res.json(flows);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: err.message });
-//   }
-// });
+router.get("/action-logs", auth, coordinatorOnly, async (req, res) => {
+  const logs = await ActionLog.find(query)
+    .populate("userId", "name email") // ← this gives you log.userId.name
+    .sort({ createdAt: -1 });
+  res.json(logs);
+});
 
 router.get("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
   try {

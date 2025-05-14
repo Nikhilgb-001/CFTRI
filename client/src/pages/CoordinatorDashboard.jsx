@@ -33,6 +33,7 @@ import "react-datepicker/dist/react-datepicker.css";
 
 const CoordinatorDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [actionLogFilter, setActionLogFilter] = useState("");
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [editingStatus, setEditingStatus] = useState(null);
@@ -43,6 +44,7 @@ const CoordinatorDashboard = () => {
     email: "",
     assignedTask: "",
   });
+
   const [expandedUsers, setExpandedUsers] = useState({});
   const [assignTaskData, setAssignTaskData] = useState({
     userId: null,
@@ -153,6 +155,7 @@ const CoordinatorDashboard = () => {
     // amount: { type: Number },
     amount: "",
     date: new Date(),
+    userId: "",
   });
 
   const fetchStats = async () => {
@@ -414,6 +417,12 @@ const CoordinatorDashboard = () => {
       [name]: name === "amount" ? Number(value) : value,
     }));
   };
+
+  const filteredLogs = actionLogFilter
+    ? actionLogs.filter(
+        (log) => log.userId && log.userId._id === actionLogFilter
+      )
+    : actionLogs;
 
   const handleActionLogSubmit = async () => {
     try {
@@ -1056,6 +1065,44 @@ const CoordinatorDashboard = () => {
                 Actions Log
               </h2>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select User
+                </label>
+                <select
+                  name="userId"
+                  value={newActionLog.userId}
+                  onChange={handleActionLogChange}
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                  required
+                >
+                  <option value="">Select a user</option>
+                  {users.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {user.name} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Filter by User
+                </label>
+                <select
+                  value={actionLogFilter}
+                  onChange={(e) => setActionLogFilter(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="">All Users</option>
+                  {users.map((user) => (
+                    <option key={user._id} value={user._id}>
+                      {user.name} ({user.email})
+                    </option>
+                  ))}
+                </select>
+              </div> */}
+
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-medium mb-3">Log New Action</h3>
                 <div className="space-y-3">
@@ -1164,7 +1211,7 @@ const CoordinatorDashboard = () => {
               </div>
 
               {/* Action Logs List */}
-              <div>
+              {/* <div>
                 <h3 className="font-medium mb-3">Recent Actions</h3>
                 {actionLogs.length === 0 ? (
                   <div className="text-center py-4 text-gray-500">
@@ -1195,6 +1242,58 @@ const CoordinatorDashboard = () => {
                             {log.details}
                           </p>
                         )}
+                        {log.transactionId && (
+                          <p className="mt-1 text-sm">
+                            <span className="font-medium">Transaction ID:</span>{" "}
+                            {log.transactionId}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div> */}
+              <div>
+                <h3 className="font-medium mb-3">Recent Actions</h3>
+                {actionLogs.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500">
+                    No actions logged yet
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {actionLogs.map((log) => (
+                      <div
+                        key={log._id}
+                        className="p-3 border border-gray-200 rounded-lg"
+                      >
+                        {/* top row: action, category, date */}
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-baseline space-x-2">
+                            <span className="font-medium">
+                              {log.actionType}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              ({log.category})
+                            </span>
+                            {log.userId && (
+                              <span className="text-sm text-gray-700 ml-4">
+                                <strong>User:</strong> {log.userId.name}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {new Date(log.date).toLocaleDateString()}
+                          </div>
+                        </div>
+
+                        {/* details */}
+                        {log.details && (
+                          <p className="mt-1 text-sm text-gray-700">
+                            {log.details}
+                          </p>
+                        )}
+
+                        {/* transaction */}
                         {log.transactionId && (
                           <p className="mt-1 text-sm">
                             <span className="font-medium">Transaction ID:</span>{" "}
