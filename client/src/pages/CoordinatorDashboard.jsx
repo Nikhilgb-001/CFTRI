@@ -432,7 +432,14 @@ const CoordinatorDashboard = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setActionLogs([res.data, ...actionLogs]);
+      const savedLog = res.data;
+      const fullUser = users.find((u) => u._id === savedLog.userId);
+
+      // setActionLogs([res.data, ...actionLogs]);
+      setActionLogs([
+        { ...savedLog, userId: fullUser || savedLog.userId },
+        ...actionLogs,
+      ]);
       setNewActionLog({
         category: "Technology",
         actionType: "",
