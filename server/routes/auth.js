@@ -65,25 +65,23 @@ router.post("/login/user", async (req, res) => {
 router.post("/reset-password", async (req, res) => {
   try {
     const { email, newPassword, confirmNewPassword } = req.body;
-    // Basic validation
     if (newPassword !== confirmNewPassword) {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    // Find the user by email
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     // Hash the new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
-    await user.save();
+    const hashed = await bcrypt.hash(newPassword, 10);
 
-    res.json({ message: "Password updated successfully!" });
+    // Directly update the password without re-validating the whole document
+    await User.updateOne({ _id: user._id }, { $set: { password: hashed } });
+
+    return res.json({ message: "Password updated successfully!" });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("reset-password error:", err);
+    return res.status(500).json({ message: err.message });
   }
 });
 

@@ -368,6 +368,7 @@ const Profile = () => {
     details: true,
     contacts: true,
     technologies: true,
+    techTransfer: true,
   });
   const token = localStorage.getItem("token");
 
@@ -589,6 +590,18 @@ const Profile = () => {
                     >
                       <Layers className="h-5 w-5 mr-3 text-gray-500" />
                       Technologies
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("techTransfer")} // ← new
+                      className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center transition-colors duration-150 ${
+                        activeTab === "techTransfer"
+                          ? "bg-indigo-50 text-indigo-700"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      <Package className="h-5 w-5 mr-3 text-gray-500" />{" "}
+                      {/* or any icon */}
+                      Tech Transfer Flows
                     </button>
                   </>
                 )}
@@ -921,6 +934,56 @@ const Profile = () => {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {activeTab === "techTransfer" && user.onboarding && (
+                  <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="border-b border-gray-200 p-6 flex items-center">
+                      <Package className="h-6 w-6 mr-2 text-indigo-600" />
+                      <h2 className="text-xl font-bold text-gray-800">
+                        Tech Transfer Flows
+                      </h2>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      {user.onboarding.techTransferLogs?.length > 0 ? (
+                        user.onboarding.techTransferLogs.map((log, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-gray-50 p-4 rounded-lg border border-gray-200"
+                          >
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-medium">
+                                {log.actionType}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                {new Date(log.date).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {log.details && (
+                              <p className="text-sm text-gray-700 mb-1">
+                                {log.details}
+                              </p>
+                            )}
+                            {log.transactionId && (
+                              <p className="text-sm">
+                                <strong>Transaction ID:</strong>{" "}
+                                {log.transactionId}
+                              </p>
+                            )}
+                            {log.amount != null && (
+                              <p className="text-sm">
+                                <strong>Amount:</strong> {log.amount}
+                              </p>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-500">
+                          No tech transfer flows logged yet.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

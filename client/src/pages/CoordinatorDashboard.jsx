@@ -55,15 +55,6 @@ const CoordinatorDashboard = () => {
 
   const token = localStorage.getItem("token");
 
-  // const [techFlow, setTechFlow] = useState([
-  //   { step: "Payment Received", date: new Date() },
-  //   { step: "Entry into AMS", date: new Date(), note: "within 1 week" },
-  //   { step: "Draft Agreement", date: new Date() },
-  //   { step: "Dasian", date: new Date() },
-  //   { step: "Demonstrate", date: new Date() },
-  //   { step: "Demonstration & Certificate Generation", date: new Date() },
-  // ]);
-
   const [techFlow, setTechFlow] = useState([
     { step: "Payment Received", date: new Date(), details: "" },
     { step: "Entry into AMS (within 1 week)", date: new Date(), details: "" },

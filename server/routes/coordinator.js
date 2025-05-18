@@ -177,11 +177,11 @@ router.post("/action-log", auth, coordinatorOnly, async (req, res) => {
     });
     await actionLog.save();
 
-    // 2) If it's a tech-transfer entry, push into the user's array
+    // 2) If it's a tech‐transfer entry, push into the user's onboarding.techTransferLogs
     if (category === "Technology" && userId) {
       await User.findByIdAndUpdate(userId, {
         $push: {
-          techTransferLogs: {
+          "onboarding.techTransferLogs": {
             actionType,
             date: date || new Date(),
             details,
@@ -195,7 +195,7 @@ router.post("/action-log", auth, coordinatorOnly, async (req, res) => {
     // 3) Return the new log
     res.status(201).json(actionLog);
   } catch (err) {
-    console.error(err);
+    console.error("Error saving action log:", err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -478,48 +478,6 @@ router.delete("/coordinators/:id", auth, coordinatorOnly, async (req, res) => {
   }
 });
 
-// router.post("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
-//   try {
-//     console.log(
-//       "\n📥 [tech-transfer] request body:",
-//       JSON.stringify(req.body, null, 2)
-//     );
-
-//     const { steps } = req.body;
-//     if (!Array.isArray(steps) || steps.length === 0) {
-//       return res
-//         .status(400)
-//         .json({ message: "Must send non-empty array of steps" });
-//     }
-
-//     const mapped = steps.map((s, i) => {
-//       if (!s.name || !s.date) {
-//         throw new Error(`Step #${i + 1} missing name or date`);
-//       }
-//       return {
-//         name: s.name,
-//         date: new Date(s.date),
-//         details: s.details || "",
-//       };
-//     });
-
-//     const flow = new TechTransferFlow({ dean: req.user.id, steps: mapped });
-//     const saved = await flow.save();
-
-//     console.log("✅ [tech-transfer] saved flow:", saved._id);
-//     res.status(201).json(saved);
-//   } catch (err) {
-//     // Print the full stack to your server console
-//     console.error("❌ [tech-transfer] Error saving:", err.stack);
-
-//     // In dev you can return the stack so you see it in the browser console
-//     res.status(err.name === "ValidationError" ? 400 : 500).json({
-//       message: err.message,
-//       stack: err.stack,
-//     });
-//   }
-// });
-
 router.post("/action-log", auth, coordinatorOnly, async (req, res) => {
   try {
     const {
@@ -571,6 +529,101 @@ router.get("/action-logs", auth, coordinatorOnly, async (req, res) => {
     .populate("userId", "name email") // ← this gives you log.userId.name
     .sort({ createdAt: -1 });
   res.json(logs);
+});
+
+// router.post("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
+//   try {
+//     console.log(
+//       "\n📥 [tech-transfer] request body:",
+//       JSON.stringify(req.body, null, 2)
+//     );
+
+//     const { steps } = req.body;
+
+//     const filled = Array.isArray(steps)
+//       ? steps.filter((s) => s.date || s.details)
+//       : [];
+
+//     if (filled.length === 0) {
+//       return res
+//         .status(400)
+//         .json({ message: "Please provide at least one step with data." });
+//     }
+
+//     // map & validate just the ones they filled in
+//     const mapped = filled.map((s, i) => ({
+//       name: s.name,
+//       date: new Date(s.date),
+//       details: s.details || "",
+//     }));
+
+//     const flow = new TechTransferFlow({ dean: req.user.id, steps: mapped });
+//     const saved = await flow.save();
+
+//     console.log("✅ [tech-transfer] saved flow:", saved._id);
+//     res.status(201).json(saved);
+//   } catch (err) {
+//     // Print the full stack to your server console
+//     console.error("❌ [tech-transfer] Error saving:", err.stack);
+
+//     // In dev you can return the stack so you see it in the browser console
+//     res.status(err.name === "ValidationError" ? 400 : 500).json({
+//       message: err.message,
+//       stack: err.stack,
+//     });
+//   }
+// });
+
+// routes/coordinator.js
+router.post("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
+  try {
+    const { steps, userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ message: "Must provide userId" });
+    }
+    const filled = Array.isArray(steps)
+      ? steps.filter((s) => s.date || s.details)
+      : [];
+    if (filled.length === 0) {
+      return res.status(400).json({ message: "Provide at least one step" });
+    }
+    const mapped = filled.map((s) => ({
+      name: s.name,
+      date: new Date(s.date),
+      details: s.details || "",
+    }));
+
+    // 1) save the flow document
+    const flow = new TechTransferFlow({
+      dean: req.user.id,
+      user: userId,
+      steps: mapped,
+    });
+    const saved = await flow.save();
+
+    // 2) push each step into the user's onboarding.techTransferLogs
+    await Promise.all(
+      mapped.map((step) =>
+        User.findByIdAndUpdate(userId, {
+          $push: {
+            "onboarding.techTransferLogs": {
+              actionType: step.name,
+              date: step.date,
+              details: step.details,
+            },
+          },
+        })
+      )
+    );
+
+    // 3) respond
+    res.status(201).json(saved);
+  } catch (err) {
+    console.error("❌ [tech-transfer] Error saving:", err);
+    res
+      .status(err.name === "ValidationError" ? 400 : 500)
+      .json({ message: err.message });
+  }
 });
 
 router.get("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {

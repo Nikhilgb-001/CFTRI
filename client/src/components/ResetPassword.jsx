@@ -19,7 +19,8 @@ const ResetPassword = () => {
     try {
       const res = await axios.post(
         "http://localhost:5000/auth/reset-password",
-        formData
+        formData,
+        { headers: { "Content-Type": "application/json" } }
       );
       toast.success(res.data.message, {
         autoClose: 2000,
