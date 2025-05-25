@@ -12,7 +12,7 @@ const router = express.Router();
 // Register user (lead) – includes onboarding data from multi-step form
 router.post("/register/user", async (req, res) => {
   try {
-    const { name, email, password, onboarding } = req.body;
+    const { name, email, password, onboarding, contact } = req.body;
     const existing = await User.findOne({ email });
     if (existing)
       return res.status(400).json({ message: "User already exists" });
@@ -22,6 +22,7 @@ router.post("/register/user", async (req, res) => {
       email,
       password: hashedPassword,
       onboarding,
+      contact,
     });
     await user.save();
     const token = jwt.sign(

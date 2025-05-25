@@ -1,22 +1,15 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
   User,
-  Bell,
   Contact,
-  Cpu,
-  Edit2,
-  Trash2,
   Check,
   X,
   ChevronRight,
   ChevronDown,
-  Calendar,
   Hash,
-  Smartphone,
   Mail,
   Building,
   Package,
@@ -28,12 +21,401 @@ import {
   Briefcase,
   Globe,
   Layers,
-  Search,
-  Filter,
-  ArrowLeft,
 } from "lucide-react";
 
 // Option arrays for the Technologies dropdowns
+const discussionMatterOptions = [
+  "Bakery Products",
+  "Beverage Products",
+  "Cereal Products",
+  "Convenience Products",
+  "Food Machinery",
+  "Fruits & Vegetable Products",
+  "Meat & Marine Products",
+  "Microbiology & Fermentation",
+  "Plantation & Spice Products",
+  "Protein Specialty Products",
+];
+
+const bakeryProductOptions = [
+  "Sugar-free Biscuit",
+  "Baking powder",
+  "Bread: Production (Brown, Plain, Sweet, Milk, Whole wheat, Fruit, High fiber, Ragi, Bajra)",
+  "Composite Bajra Bread",
+  "Composite Ragi Rusk",
+  "Onion-flavoured biscuit",
+  "Wheat Germ Stabilization",
+  "Sugar-free cup cake",
+  "Sugar-free cake rusk",
+  "Instant Payasam Mix",
+  "Bar cake",
+  "Sugar-free rusk",
+  "High protein rusk",
+  "Cake rusk",
+  "Instant cake mix",
+  "Vermicelli (wheat & whole wheat flour)",
+  "Fortified protein-rich vemicelli",
+  "Layered parotta (South Indian)",
+  "Suruchi meetha-health food snacks (burfi)",
+  "Honey-based Bakery products",
+  "Atta with multi-grains/ multi-whole grains",
+  "Instant upma, halva & rava idli mix from multigrain semolina",
+  "Instant upma, halva & rava idli mix from high fiber semolina",
+  "Instant upma mix from millets & multimillets semolina",
+  "Instant halva mix from millets & multimillets semolina",
+  "Instant rava idli mix from millets & multimillets semolina",
+  "Production of high fiber semolina (sooji/rava)",
+  "Production of high protein semolina (sooji/rava)",
+  "Production of barley dahlia/semolina",
+  "Roller milling process for multigrain semolina (sooji/rava)",
+  "Roller milling process for semolina (sooji/rava) from millets & preparation of multimillets",
+  "Process for extension of shelf life of bread with natural preservatives",
+  "Shelf Stable muffins with natural preservatives",
+  "Nutritious high fiber soup sticks",
+  "Baked savory snacks",
+  "Preparation of chestnut-based gluten-free cookies",
+  "Ragi-based biscuit",
+  "Buckwheat Noodles (Soba)/Pasta",
+  "Gluten free Biscuit",
+  "Gluten free Cookie Cake",
+  "Multigrain Nutri Cookies",
+  "Production of Quinoa Germ Preparation of Spice Bread",
+  "Preparation of Fibre Enriched Rusk",
+  "Process for Gluten Free Cake Mix",
+  "A process for the production of multigrain waffle",
+  "A process for the production of Multigrain Pizza Base",
+  "Process for development of gluten free bread premixes [three Versions] 1.Proso millet, 2. Foxtail millet and 3. Barnyard millet",
+  "Process for development of gluten free bread premix (Version -1) Proso millet",
+  "Process for development of gluten free bread premix (version-2) Foxtail millet",
+  "Development of gluten free bread premix (version-3) Baryard millet",
+];
+
+const beverageProductOptions = [
+  "Cereal flakes: jowar",
+  "Instant traditional foods: Bisi bele bhath, Sambar, Rasam, Pongal, Urd bhath, Imli poha",
+  "Spice mix: Puliogere",
+  "Paushtik atta",
+  "Composite vermicelli based on ragi flour",
+  "Maize flakes (wet heat process)",
+  "Maize chips",
+  "Ready to eat low fat snack — Chakli & Tengolal",
+  "Ready to eat low fat flaked spicy Maize/ Corn-snacks",
+  "Legume based ready-to-fry-snacks",
+  "Ragi based papads",
+  "Pulse based papads",
+  "Decortication of Ragi",
+  "Malted ragi flour - enzyme rich",
+  "Ready-to-eat low fat maize snacks from milled maize grits",
+  "Flaking of foxtail millet",
+  "Composite lentil chips",
+  "Flaked jowar - RTE sweet & savoury snacks",
+  "Quick cooking, germinated & dehydrated pulses",
+  "Fermented & dehydrated ready mixes for Idli & Dosa",
+  "Foods for diabetics",
+  "Shelf-stable jowar flour",
+  "Processed besan (Bengal gram flour) for sev & boondi preparation",
+  "Puffed moth bean based sweet and savoury snacks",
+  "Finger millet (Ragi) based murukku",
+  "Expanded Horse gram",
+  "Flaking of ragi",
+  "Shelf stable optimally milled brown rice",
+  "Multigrain based fortified snack",
+  "Mothbean Dal Puff",
+  "Multi-grain sweet mix",
+  "Ready to eat snack mix from puffed coarse cereals & legumes",
+  "Ready to cook multigrain whole mix for drink/ porridge",
+  "Convenience flour from Ragi suitable for stiff porridge",
+  "Finger millet based multigrain semolina for preparation of Upma, Kesri bath & similar products",
+  "Protein enriched ragi vermicelli",
+  "Shelf stable roti from cereals & millets (rice/ragi/maize/jowar/bajra)",
+  "Low fat expanded green snack using moringa leaves",
+  "Preparation of beverage mix from malted ragi",
+  "Multigrain instant semolina",
+  "Millet based cookie",
+  "Process for production of multigrain gluten free semolina",
+  "Multigrain gluten free instant upma mix",
+  "Multigrain gluten free instant rava idli mix",
+  "Multigrain gluten free instant halwa mix",
+  "Production of Sorghum (jowar) semolina",
+  "Production of pearl millet semolina",
+  "Instant upma, halwa and rava idli mix from barley semolina",
+  "Production of rice grits/sooji",
+  "Ready-to-eat weaning food based on Malted Wheat",
+  "Ready-to-eat weaning food based on Malted Rice",
+  "Ready-to-eat weaning food based on Malted Multi-cereals",
+  "Antidiabetic beverage mix - DiaLow GI-53 (Barley+Wheat-Herb based)",
+  "Antidiabetic beverage mix - DiaLow GI-49 (Wheat-Herb based)",
+  "Antidiabetic beverage mix - DiaLow GI-47 (Barley-Herb based)",
+  "Barley-seaweed based Anti-obese supplement Sea Slim",
+  "Production of soluble & insoluble arabinoxylan from wheat bran",
+  "Ragi based malt hydrolysate",
+  "Malted ragi based ready to eat weaning food",
+  "Finger millet semolina",
+  "Instant finger millet (ragi) ravi idli mix",
+  "Instant finger millet halwa mix",
+  "Instant finger millet kichadi mix",
+  "Instant finger millet upma mix",
+  "Millet and multimillet puttu podu mix",
+];
+
+const cerealProductOptions = [
+  "Coffee concentrate",
+  "Cola flavour concentrate",
+  "Orange flavour concentrate for manufacture of soft beverage",
+  "Clear Lime-Lemon flavour blend for soft drink manufacture",
+  "Liquid fruits (clarified fruit juices) - Apple, Banana, Grapes, Guava",
+  "Pomegranate juice & products",
+  "Bottling of Sugarcane juice",
+  "Fruit syrups & squashes",
+  "Litchi products (canned; squash)",
+  "RTS fruit juice & beverages",
+  "Neera bottling",
+  "Low Glycemic Index (GI) Beverage for Diabetics",
+  "Banana pseudo stem juice beverage",
+  "Instant Ginger Beverage (Ginger Tea)",
+  "Coconut beverage from tender coconut",
+  "Preparation of Nutri Beverage in Glass Bottles (Non -Aerated)",
+  "Mixed fruit and Vegetable juices",
+  "Fortified sugarcane beverage in glass bottles",
+  "Ginger beverage",
+  "Tender coconut water concentrate with sugar",
+  "Improved process for preservation of Neera (pet bottles)",
+  "Neera concentrate",
+  "Green coffee extract",
+  "Carbonated fruit beverages from selected fruits (mango, grapes, lime, orange)",
+  "Paan flavoured water",
+  "Coffee leaves brew mix",
+  "Glucose-amla Beverage Mix",
+];
+
+const convenienceProductOptions = [
+  "Ready Mixes - Vada, Dosa, Chakli, Jamoon, Jelebi Maddur vada, Pakoda, Cake Doughnut, Combination doughnut",
+  "Ready mix: Upma",
+  "RTE convenience food-Khakra",
+  "North Indian (Punjab) Halwa Mix",
+  "Bombay Halwa Mix",
+  "Chutney paste (spread)",
+  "Low sugar milk Burfi",
+  "Deep fat fried & flavoured cashew kernels",
+  "Roasted & flavoured cashew kernel",
+  "Shelf-stable & ready to eat foods thermo processed in retort pouches (non-veg. & veg. Foods)",
+  "Tamarind candy",
+  "Nutri blends of edible oils",
+  "Chikki/ Nutra-chikki (3 formulations)",
+  "Nutra Chikki with added spirulina",
+  "Cereal Bar",
+  "Multigrain cereal-legume Bar and Puffed Rice Bar",
+  "Spirulina-choco bar and spirulina-cereal bar",
+  "Fat powder",
+  "Value Added products from coconut (Instant adjunct mix, Instant filling mix, Coconut rice mix, Coconut bites)",
+  "Milk Chocolate",
+  "Milk Chocolate with no added sugar",
+  "Coconut Oil Blends with other vegetable oils",
+  "Preparation of protein, vitamin and mineral fortified chikki",
+  "Dhal based nutritional supplement for foods",
+  "Gongura leaf powder",
+  "Instant Rava Idli Mix",
+  "DOLYMIX - for soft & enhanced number of IDLYS",
+  "Chocolate rich in healthy polyphenols",
+  "Chikki with Moringa",
+  "Ready to use Multigrain Idli and Dosa Batter in Retail Packs",
+];
+
+const foodMachineryOptions = [
+  "Versatile Dal mill",
+  "Continuous Dosa Making unit",
+  "Design on Spouted Bed Coffee Roaster",
+  "Vibro fluidized bed roaster",
+  "Dry maize milling plant",
+  "Device for Pneumatic extrusion of dough & device useful for dusting & cutting of dough into geometrical shapes",
+  "Infrared heating of Cashew for testa removal",
+  "Combined infrared hot air heating system for food processing",
+  "Hot air popping machine using flue gas",
+  "Desiccated coconut drier",
+  "Continuous bio-plate casting machine",
+  "Automatic continuous cooker",
+  "Sugarcane de-skinning machine",
+  "Integrated hot air roasting machine",
+  "Continuous Vada making Machine",
+  "Mini versatile dhal mill",
+  "Hand operated lemon cutting machine",
+  "Moulding machine for besan, sooji/rava and similar laddus",
+  "Device useful for sheeting and cutting of chikki & other similar Indian Traditional sweets",
+  "Forming and frying machine for foods",
+  "Domestic dough shaping & forming machine",
+  "Continuous dough sheet extruder",
+  "Tiny Rice Mill",
+  "Continuous wet cum dry grinding machine for foods (Colloidal mill)",
+  "3 A device for continuous forming and frying of boondi",
+  "Annatto seed separator",
+  "Table top continuous wet cum dry grinder",
+  "Thepla & Kakra processing machine",
+  "Design & Development of a machine for continuous cooking & discharging of Ragi mudde/ball making",
+  "Ozone based air disinfection system",
+];
+
+const fruitsVegetableProductOptions = [
+  "Fruit bars: Apple, Banana, Guava, Mango",
+  "Fortified Mango bar",
+  "Fruits & Vegetables dehydration: Grapes, Banana, Onion, Potato, Peas & green chillies",
+  "Oyster Mushroom: dehydration",
+  "Technology Protocol for export of Alphonso Mango by Ship",
+  "Technology Protocol for export of Banana variety Dwarf Cavendish by Ship",
+  "Fruit jams & jellies: preparation",
+  "Tutti-fruity (papaya/carrot)",
+  "Fruit & vegetables: canning of",
+  "Pickles & Chutneys",
+  "Osmo-air dried fruits (Amla, Jackfruit, Pineapple & Mango)",
+  "Potato flour",
+  "Potato wafers/chips: direct process",
+  "Tomato products (Juice, Ketchup, Sauce etc.)",
+  "Jamoon fruit products: (squash, RTS beverage, syrup)",
+  "Dehydrated drumstick powder",
+  "Amla spread",
+  "Modified atmosphere packaging of minimally processed vegetables",
+  "Value added products from Figs (Ficus carica L)",
+  "Dehydrated bitter gourd",
+  "Dehydrated whole lime",
+  "Instant mushroom soup mix",
+  "Dipping oil formulation for grapes",
+  "Bio-preservation of ready-to-eat sugarcane chunks",
+  "Amla paste",
+  "Date Syrup Concentrate",
+  "Mangosteen Fruit Products",
+  "Value added products from custard apple (pulp, microfiltered beverage & jelly)",
+  "Products from pear fruit (dehydrated fruit, juice & powder)",
+  "Fruit jam slices",
+  "Apple pomace powder for enrichment of bakery products (bun, muffin, cookies)",
+  "Instant products from Moringa leaves",
+  "Crunchy banana cereal bar",
+  "Instant Broccoli soup mix",
+  "Plain spiced RTS beverage & squash from kokum",
+  "Kokum jelly",
+  "Banana juice",
+  "Improved process for banana fruit bar",
+  "Sweet Potato soup mix",
+  "Minimally processed pomegranate arils",
+  "Nutrient and Micronutrient rich Ready-to-Eat (RTE) salad",
+  "Process for Instant Tomato crush, Tomato Rasam mix & Tomato rice bath mix",
+  "Process for preparation of raw banana powder (unripe)",
+  "Process for Nutri Fruit bars with immune boosters",
+  "Beverage concentrate/ Paste from Mango, in Collapsible Tube",
+  "Beverage concentrate/ Paste from Guava, in Collapsible Tube",
+  "Beverage concentrate/ Paste from Pineapple, in Collapsible Tube",
+  "Beverage concentrate/ Paste from mixed fruit and vegetable, in Collapsible Tube",
+];
+
+const meatMarineProductOptions = [
+  "Instant gravy mixes (dehydrated)",
+  "Meat pickles: Prawn, Mutton",
+  "Fish viscera silage (fermented)",
+  "Sausage preparation: Chicken & Pork",
+  "Meat/Fish/Poultry wafers (Chicken/Fish/Prawn/Pork/Egg/Meat)",
+  "Shelf-stable chicken biryani",
+  "Shelf-stable chicken tit-bits",
+  "Meat burger",
+  "Egg loaf",
+  "Shelf stable kabab mix with chicken meat",
+  "Ready to eat shelf stable egg crunchy bite",
+  "Dehydrated Egg Cubes",
+  "Deep fat fried Egg Cubes",
+  "Shelf stable egg albumin & egg yolk cubes",
+  "Low fat meat kofta",
+  "Shelf-stable biryani paste",
+  "Shelf stable varieties of curry pastes for vegetarian & non vegetarian traditional cuisines",
+  "Shelf stable convenience mix: A cooking base",
+  "Gelatin from Chicken feet",
+];
+
+const microbiologyFermentationOptions = [
+  "Microbial production of Fructooligosaccharides (FOS)",
+  "Kit for the detection of aflatoxins by improved Dot-ELISA technique",
+  "Preparation of wine from Garcina Xanthochymus",
+  "Microbial inoculums for the management of coffee pulp effluent",
+  "Bifido curd",
+  "Soya curd",
+  "A-Hango: Preparation for alleviating alcohol hangover",
+  "A green process for production of methylanthines for food and other applications",
+  "Herbal Hand Sanitizer (Gel Form)",
+  "Herbal Hand Sanitizer (Liquid Form)",
+  "Herbal fogging disinfectants for mist sanitizer system",
+  "Herbal spray Sanitizer",
+  "Herbal Bulk sanitizer product",
+  "High Performance Advanced Oxidation Process for STP's Greywater and Industrial Wastewaters (Food and Non-Food)",
+  "Banana Juice",
+  "Process for the production of transglycosylating a-glucosidase using novel fungal strain",
+  "Production of Baker's Yeast",
+  "Process know-how for Probiotic Carrot nectar",
+];
+
+const plantationSpiceProductOptions = [
+  "Annatto dye: preparation",
+  "Processing of cocoa beans to: Cocoa mass, Cocoa butter, Cocoa powder",
+  "Compounded Asafoetida",
+  "Food colours: natural - Beetroot, Safflower, Kokum & Grapes",
+  "Garlic powder",
+  "Kokum: concentrate & powder",
+  "Mustard powder",
+  "Making superior quality White pepper",
+  "Plant growth promoter: n-triacontanol",
+  "Spice oil - Pepper",
+  "Spice oleoresins: Turmeric & Chillies",
+  "An improved process for Chilli oleoresin",
+  "Tamarind: juice concentrate & powder",
+  "Processing of cocoa (Theobroma cocoa pods to dried cocoa beans)",
+  "Zinc - EDTA Chelate",
+  "Garlic paste",
+  "Ginger paste",
+  "Spray dried coconut milk powder",
+  "Sugarcane juice spread",
+  "Removal of smoky odour from Bhatti cured large cardamom capsules",
+  "Green pepper in brine",
+  "Green tamarind spice mix - paste & powder",
+  "Preparation of cashew apple candy",
+  "Faster curing of vanilla beans",
+  "Preparation of radical scavenging conserve from tea leaves - normal/coarse/pruned",
+  "Chlorogenic acid rich coffee conserve from green coffee beans",
+  "Water soluble turmeric colourant (odourless) formulation",
+  "2-hydroxy-4 methoxy benzaldehyde, a natural flavourant from Swallow Roots (Decalepis hamittoni) Wight & Arn",
+  "Coffee flakes based mouth freshener",
+  "Production of coconut spread from Mature coconut water concentrate & coconut dietary fibre",
+  "Virgin Coconut oil preparation",
+  "Marigold Oleoresin preparation",
+  "Preparation of dehydrated green pepper without chemicals",
+  "Turmeric powder from fresh turmeric rhizome",
+  "Instant Coffee cubes",
+  "CGA enriched Carbonated Coffee",
+  "Preparation of zerumbone crystals from fresh zerumbet rhizomes",
+  "Dehydration of coriander foliage",
+  "Process for freshness keeper paper for extension of shelf life of cut roses",
+  "Instant Tea Premix",
+  "Ethylene Scavenger",
+];
+
+const proteinSpecialtyProductOptions = [
+  "Mustard/rape seed integrated processing",
+  "Sesame: dehulling, (wet process)",
+  "Rural based biotechnological production of spirulina",
+  "Malted weaning food",
+  "Full fat Soya flour: edible (improved process)",
+  "Dry dehulling of sesame seed",
+  "Low fat high protein snack foods",
+  "Bland soya protein concentrate",
+  "Energy food: new formulation",
+  "Heat resistant white Sesame seeds",
+  "Groundnut (peanut) butter",
+  "Soya Protein Hydrolysate",
+  "Preparation of Beta Carotene and mineral fortified bun",
+  "Stabilized edible rice bran",
+  "Sesame based nutritious supplement",
+  "Moringa seed protein isolate as Flocculant",
+  "A Process for flavour essence from decalepis",
+  "Process for the preparation of whey protein hydrolysate",
+  "Coconut protein powder",
+  "Spray-dried refined papain",
+  "Cleaner process for biotechnological production of spirulina",
+];
+
 const broadAreaOptions = [
   "Amla",
   "Annatto",
@@ -131,232 +513,15 @@ const broadAreaOptions = [
   "Wheat",
 ];
 
-const commoditiesOptions = [
-  // You can modify this list if needed; currently using the same set as broadAreaOptions.
-  ...broadAreaOptions,
-];
-
-const keywordsOptions = [
-  "Aflatoxin",
-  "Alphonso",
-  "Ammonium",
-  "Atta",
-  "Baking",
-  "Besan",
-  "Beta carotene",
-  "Beverages",
-  "Bifido",
-  "Bioactive",
-  "Biriyani",
-  "Biscuits",
-  "Blend",
-  "Bombay halwa",
-  "Boondi",
-  "Bottled",
-  "Bread",
-  "Brine",
-  "Bun",
-  "Burfi",
-  "Burger",
-  "Cake",
-  "Candy",
-  "Canned",
-  "Carbonated",
-  "Cavend",
-  "Cereal",
-  "Chapathi",
-  "Chestnut",
-  "Chicken",
-  "Chikki",
-  "Chips",
-  "Chlorogenic acid",
-  "Chocolate",
-  "Chutney",
-  "Cola",
-  "Colourant",
-  "Composite flour",
-  "Concentrate",
-  "Continuous",
-  "Cookies",
-  "Coriander leaves",
-  "Cubes",
-  "Cupcake",
-  "Curing",
-  "Curry paste",
-  "De skinning",
-  "Dehulling",
-  "Dehydration",
-  "Desiccasted",
-  "Dhal",
-  "Dhal mill",
-  "Diabetes",
-  "Dipping oil",
-  "Disinfection",
-  "Dosa",
-  "Dough",
-  "Dye",
-  "Edible oil",
-  "EDTA Solution",
-  "Eggless",
-  "Energy food",
-  "Enrichment",
-  "Enzyme",
-  "Extraction",
-  "Fat replacer",
-  "Fermentation",
-  "Fiber",
-  "Flakes",
-  "Flavour",
-  "Flour",
-  "Forming",
-  "Fortification",
-  "Fried",
-  "Fruits",
-  "Gelatin",
-  "GI",
-  "Gluten free",
-  "Gravy",
-  "Green",
-  "Grinding",
-  "Halwa",
-  "Hand operated",
-  "Healthy food",
-  "Heat resistant",
-  "High fiber",
-  "High protein",
-  "Hot air",
-  "Idly",
-  "Innoculum",
-  "Instant",
-  "Jam",
-  "Jamoon",
-  "Jelly",
-  "Juice",
-  "Kabab",
-  "Ketchup",
-  "Khakhra",
-  "Kheer",
-  "Kofta",
-  "Laddu",
-  "Legumes",
-  "Levening",
-  "Lime",
-  "Liquid fruits",
-  "Low fat",
-  "Low sugar",
-  "Machinery",
-  "Maida",
-  "Malted",
-  "Microbial production",
-  "Millets",
-  "Mineral",
-  "Minimally",
-  "Moulding",
-  "Mouth freshner",
-  "Muffin",
-  "Multigrain",
-  "Natural",
-  "Non thermal processing",
-  "Non-Vegetarian",
-  "Noodle",
-  "North indian",
-  "Nutriblend",
-  "Nutrient",
-  "Nutrition",
-  "Oleoresin",
-  "Oligosaccharides",
-  "Osmodrying",
-  "Oyster mushroom",
-  "Ozone",
-  "Paan",
-  "Packaging",
-  "Paddu",
-  "Papad",
-  "Parotta",
-  "Pasta",
-  "Paste",
-  "Payasam",
-  "Peanut butter",
-  "Pickle",
-  "Plant growth",
-  "Polyphenols",
-  "Popping",
-  "Porridge",
-  "Poultry",
-  "Powder",
-  "Prawn",
-  "Preservation",
-  "Probiotic",
-  "Protein",
-  "Protocol",
-  "Puffed",
-  "Puliogare",
-  "Pulp",
-  "Pulses",
-  "Radical scavenging",
-  "Rava",
-  "Ready mix",
-  "Ready to cook",
-  "Ready to eat",
-  "Ready to fry",
-  "Ready to serve",
-  "Retort",
-  "Rhizome",
-  "Roasted",
-  "Roller mill",
-  "Roti",
-  "Rural production",
-  "Rusk",
-  "Salad",
-  "Sambar",
-  "Sauce",
-  "Sausage",
-  "Seed separator",
-  "Seeds",
-  "Semolina",
-  "Sheeting",
-  "Shelf life",
-  "Shelf stable",
-  "Shipping",
-  "Smoky odour",
-  "Snacks",
-  "Sooji",
-  "Soup",
-  "South indian",
-  "Spices",
-  "Spread",
-  "Squash",
-  "Stabilised",
-  "Sugar free",
-  "Super food",
-  "Supplement",
-  "Swallow",
-  "Sweet mix",
-  "Syrup",
-  "Table top",
-  "Technology",
-  "Testa remover",
-  "Thepla",
-  "Tissue Culture",
-  "Traditional foods",
-  "Tuti-fruti",
-  "Upma",
-  "Vada",
-  "Vanilla",
-  "Vegetables",
-  "Vegetarian",
-  "Vermicelli",
-  "Virgin coconut oil",
-  "Vitamin",
-  "Wafers",
-  "Waste utilisation",
-  "Water",
-  "Wet heat processing",
-  "Whey protein",
-  "White pepper",
-  "Wine",
-  "Zerumbone",
-  "Zinc",
+const typeOptions = [
+  "Industrial Collaboration",
+  "Technological Transfer",
+  "Start-up",
+  "MNC",
+  "Women Entrepreneurship",
+  "FPO",
+  "SHC",
+  "MSME",
 ];
 
 const Profile = () => {
@@ -364,6 +529,13 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [editFormData, setEditFormData] = useState({});
   const [activeTab, setActiveTab] = useState("basic");
+  // new state
+  const [showTechModal, setShowTechModal] = useState(false);
+  const [newDiscussionMatter, setNewDiscussionMatter] = useState("");
+  const [newSpecificOption, setNewSpecificOption] = useState("");
+  const [showTechSpecificOptions, setShowTechSpecificOptions] = useState(false);
+  const [techSpecificOptions, setTechSpecificOptions] = useState([]);
+
   const [expandedSections, setExpandedSections] = useState({
     details: true,
     contacts: true,
@@ -400,27 +572,72 @@ const Profile = () => {
     fetchProfile();
   }, [token]);
 
-  const handleDelete = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete your account? This action cannot be undone."
-      )
-    ) {
-      try {
-        await axios.delete("http://localhost:5000/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        toast.success("Account deleted successfully!", { autoClose: 2000 });
-        localStorage.removeItem("token");
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 2000);
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to delete account. Please try again.", {
-          autoClose: 3000,
-        });
-      }
+  useEffect(() => {
+    switch (newDiscussionMatter) {
+      case "Bakery Products":
+        setTechSpecificOptions(bakeryProductOptions);
+        setShowTechSpecificOptions(true);
+        break;
+      case "Beverage Products":
+        setTechSpecificOptions(beverageProductOptions);
+        setShowTechSpecificOptions(true);
+        break;
+      case "Cereal Products":
+        setTechSpecificOptions(cerealProductOptions);
+        setShowTechSpecificOptions(true);
+        break;
+      case "Convenience Products":
+        setTechSpecificOptions(convenienceProductOptions);
+        setShowTechSpecificOptions(true);
+        break;
+      case "Food Machinery":
+        setTechSpecificOptions(foodMachineryOptions);
+        setShowTechSpecificOptions(true);
+        break;
+      case "Fruits & Vegetable Products":
+        setTechSpecificOptions(fruitsVegetableProductOptions);
+        setShowTechSpecificOptions(true);
+        break;
+      case "Meat & Marine Products":
+        setTechSpecificOptions(meatMarineProductOptions);
+        setShowTechSpecificOptions(true);
+        break;
+      case "Microbiology & Fermentation":
+        setTechSpecificOptions(microbiologyFermentationOptions);
+        setShowTechSpecificOptions(true);
+        break;
+      case "Plantation & Spice Products":
+        setTechSpecificOptions(plantationSpiceProductOptions);
+        setShowTechSpecificOptions(true);
+        break;
+      case "Protein Specialty Products":
+        setTechSpecificOptions(proteinSpecialtyProductOptions);
+        setShowTechSpecificOptions(true);
+        break;
+      default:
+        setShowTechSpecificOptions(false);
+        setNewSpecificOption("");
+        break;
+    }
+  }, [newDiscussionMatter]);
+
+  const handleNewTechSubmit = async () => {
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/profile/technology",
+        {
+          discussionMatter: newDiscussionMatter,
+          specificOption: newSpecificOption,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUser(res.data);
+      // reset & close
+      setNewDiscussionMatter("");
+      setNewSpecificOption("");
+      setShowTechModal(false);
+    } catch (err) {
+      toast.error("Could not add new query");
     }
   };
 
@@ -481,6 +698,71 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => setShowTechModal(true)}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow"
+        >
+          New Query (New Tech)
+        </button>
+      </div>
+
+      {showTechModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4">Add New Technology Query</h3>
+
+            <label className="block mb-2">Topic of Interest</label>
+            <select
+              value={newDiscussionMatter}
+              onChange={(e) => setNewDiscussionMatter(e.target.value)}
+              className="w-full p-2 border rounded mb-4"
+            >
+              <option value="">Select Topic</option>
+              {discussionMatterOptions.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+
+            {showTechSpecificOptions && (
+              <>
+                <label className="block mb-2">Specific Option</label>
+                <select
+                  value={newSpecificOption}
+                  onChange={(e) => setNewSpecificOption(e.target.value)}
+                  className="w-full p-2 border rounded mb-4"
+                >
+                  <option value="">Select Specific</option>
+                  {techSpecificOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowTechModal(false)}
+                className="px-4 py-2 border rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleNewTechSubmit}
+                disabled={!newSpecificOption}
+                className="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ToastContainer position="top-center" />
       <div className="max-w-7xl mx-auto">
         {/* Header Card */}
@@ -502,35 +784,6 @@ const Profile = () => {
                   </p>
                 </div>
               </div>
-
-              {!editing ? (
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="bg-white/90 text-indigo-600 px-5 py-2.5 rounded-lg font-medium hover:bg-white transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
-                  >
-                    <Edit2 className="h-5 w-5 mr-2" />
-                    Edit Profile
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="bg-white/10 border border-white/20 px-5 py-2.5 rounded-lg font-medium hover:bg-white/20 transition-all duration-200 flex items-center justify-center hover:shadow-inner"
-                  >
-                    <Trash2 className="h-5 w-5 mr-2" />
-                    Delete Account
-                  </button>
-                </div>
-              ) : (
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => setEditing(false)}
-                    className="bg-white/10 border border-white/20 px-5 py-2.5 rounded-lg font-medium hover:bg-white/20 transition-all duration-200 flex items-center hover:shadow-inner"
-                  >
-                    <ArrowLeft className="h-5 w-5 mr-2" />
-                    Back to View
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -569,7 +822,7 @@ const Profile = () => {
                       <FileText className="h-5 w-5 mr-3 text-gray-500" />
                       Onboarding Details
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => setActiveTab("contacts")}
                       className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center transition-colors duration-150 ${
                         activeTab === "contacts"
@@ -579,7 +832,7 @@ const Profile = () => {
                     >
                       <Contact className="h-5 w-5 mr-3 text-gray-500" />
                       Contact Persons
-                    </button>
+                    </button> */}
                     <button
                       onClick={() => setActiveTab("technologies")}
                       className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center transition-colors duration-150 ${
@@ -591,7 +844,7 @@ const Profile = () => {
                       <Layers className="h-5 w-5 mr-3 text-gray-500" />
                       Technologies
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => setActiveTab("techTransfer")} // ← new
                       className={`w-full text-left px-4 py-3 rounded-lg font-medium flex items-center transition-colors duration-150 ${
                         activeTab === "techTransfer"
@@ -600,9 +853,8 @@ const Profile = () => {
                       }`}
                     >
                       <Package className="h-5 w-5 mr-3 text-gray-500" />{" "}
-                      {/* or any icon */}
                       Tech Transfer Flows
-                    </button>
+                    </button> */}
                   </>
                 )}
               </nav>
@@ -678,19 +930,19 @@ const Profile = () => {
                             label: "Subject",
                             value: user.onboarding.details.subject,
                           },
-                          {
-                            icon: (
-                              <Calendar className="h-5 w-5 text-indigo-600" />
-                            ),
-                            label: "Expected Close Date",
-                            value: new Date(
-                              user.onboarding.details.expectedCloseDate
-                            ).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            }),
-                          },
+                          // {
+                          //   icon: (
+                          //     <Calendar className="h-5 w-5 text-indigo-600" />
+                          //   ),
+                          //   label: "Expected Close Date",
+                          //   value: new Date(
+                          //     user.onboarding.details.expectedCloseDate
+                          //   ).toLocaleDateString("en-US", {
+                          //     year: "numeric",
+                          //     month: "long",
+                          //     day: "numeric",
+                          //   }),
+                          // },
                           {
                             icon: (
                               <MapPin className="h-5 w-5 text-indigo-600" />
@@ -847,45 +1099,6 @@ const Profile = () => {
                       )}
                     </div>
                     {expandedSections.technologies && (
-                      // <div className="p-6">
-                      //   <div className="overflow-hidden border border-gray-200 rounded-lg">
-                      //     <table className="min-w-full divide-y divide-gray-200">
-                      //       <thead className="bg-gray-50">
-                      //         <tr>
-                      //           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      //             Category
-                      //           </th>
-                      //           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      //             Selected Technology
-                      //           </th>
-                      //         </tr>
-                      //       </thead>
-                      //       <tbody className="bg-white divide-y divide-gray-200">
-                      //         {user.onboarding.technologies.map((tech, idx) => {
-                      //           let category = "";
-                      //           if (idx === 0) category = "Broad Area";
-                      //           else if (idx === 1) category = "Commodity";
-                      //           else if (idx === 2) category = "Keyword";
-                      //           return (
-                      //             <tr key={idx} className="hover:bg-gray-50">
-                      //               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                      //                 {category}
-                      //               </td>
-                      //               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
-                      //                 {tech.item || (
-                      //                   <span className="text-gray-400">
-                      //                     Not selected
-                      //                   </span>
-                      //                 )}
-                      //               </td>
-                      //             </tr>
-                      //           );
-                      //         })}
-                      //       </tbody>
-                      //     </table>
-                      //   </div>
-                      // </div>
-
                       <div className="p-6">
                         <div className="overflow-hidden border border-gray-200 rounded-lg">
                           <table className="min-w-full divide-y divide-gray-200">
@@ -900,27 +1113,73 @@ const Profile = () => {
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                              {/* Discussion Matter */}
                               <tr className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
-                                  Discussion Matter
+                                  Project Type
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
-                                  {user.onboarding.details.discussionMatter}
+                                  {user.onboarding.details.projectMode ===
+                                  "collaborative"
+                                    ? "Collaborative Project"
+                                    : "Technology Transfer"}
                                 </td>
                               </tr>
 
-                              {/* Specific Option */}
-                              <tr className="hover:bg-gray-50">
+                              {/* Collaborative Focus Areas */}
+                              {user.onboarding.details.projectMode ===
+                                "collaborative" && (
+                                <tr className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                                    Focus Areas
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                    {user.onboarding.details
+                                      .collaborativeOptions?.length
+                                      ? user.onboarding.details.collaborativeOptions.join(
+                                          ", "
+                                        )
+                                      : "None selected"}
+                                    {user.onboarding.details.collaborativeOther
+                                      ? `; Other: ${user.onboarding.details.collaborativeOther}`
+                                      : ""}
+                                  </td>
+                                </tr>
+                              )}
+
+                              {/* Tech-Transfer Topic */}
+                              {user.onboarding.details.projectMode ===
+                                "transfer" && (
+                                <>
+                                  <tr className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                                      Topic of Interest
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                      {user.onboarding.details
+                                        .discussionMatter || "Not selected"}
+                                    </td>
+                                  </tr>
+                                  <tr className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                                      Specific Option
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                      {user.onboarding.details.specificOption ||
+                                        "Not selected"}
+                                    </td>
+                                  </tr>
+                                </>
+                              )}
+
+                              {/* existing tech fields */}
+                              {/* <tr className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
                                   Category
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                                   {user.onboarding.details.specificOption}
                                 </td>
-                              </tr>
-
-                              {/* Type */}
+                              </tr> */}
                               <tr className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
                                   Type
@@ -929,6 +1188,17 @@ const Profile = () => {
                                   {user.onboarding.details.type}
                                 </td>
                               </tr>
+
+                              {user.onboarding.technologies.map((tech, i) => (
+                                <tr key={i} className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                                    {tech.category}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                    {tech.item}
+                                  </td>
+                                </tr>
+                              ))}
                             </tbody>
                           </table>
                         </div>
@@ -1171,7 +1441,7 @@ const Profile = () => {
                           </select>
                         </div>
 
-                        <div>
+                        {/* <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
                             <Calendar className="h-4 w-4 mr-2" />
                             Expected Close Date
@@ -1187,7 +1457,7 @@ const Profile = () => {
                             min={today}
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
                           />
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </div>

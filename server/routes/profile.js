@@ -78,4 +78,55 @@ router.delete("/", auth, async (req, res) => {
   }
 });
 
+router.post("/technology", auth, async (req, res) => {
+  try {
+    const { discussionMatter, specificOption } = req.body;
+
+    // map full label to your schema’s category enum
+    const categoryMap = {
+      "Bakery Products": "Bakery",
+      "Beverage Products": "Beverage",
+      "Cereal Products": "Cereal",
+      "Convenience Products": "Convenience",
+      "Food Machinery": "Machinery",
+      "Fruits & Vegetable Products": "FruitsVegetables",
+      "Meat & Marine Products": "MeatMarine",
+      "Microbiology & Fermentation": "Microbiology",
+      "Plantation & Spice Products": "PlantationSpice",
+      "Protein Specialty Products": "Protein",
+    };
+    const category = categoryMap[discussionMatter];
+    if (!category) {
+      return res
+        .status(400)
+        .json({ message: `Invalid discussionMatter: ${discussionMatter}` });
+    }
+
+    // only users have technologies
+    if (req.user.role !== "user") {
+      return res
+        .status(403)
+        .json({ message: "Only users can add technologies" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // push new tech
+    user.onboarding.technologies.push({
+      item: specificOption,
+      category,
+    });
+
+    await user.save();
+    // return full updated user (or you could send back just the technologies array)
+    res.json(user);
+  } catch (err) {
+    console.error("Error adding technology:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;

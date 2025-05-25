@@ -142,6 +142,7 @@ const AdminDashboard = () => {
           const res = await axios.get("http://localhost:5000/admin/users", {
             headers: { Authorization: `Bearer ${token}` },
           });
+          console.log("Fetched users:", res.data);
           setUsers(res.data);
         } catch (err) {
           console.error(err);
@@ -347,14 +348,6 @@ const AdminDashboard = () => {
     }
   }, [activeTab, token]);
 
-  // Fetch chart data when Analytics tab (tab 2) is active or not loaded
-  // useEffect(() => {
-  //   if (activeTab === 2 || !chartDataLoaded) {
-  //     fetchChartData();
-  //   }
-  // }, [activeTab, chartDataLoaded, fetchChartData]);
-
-  // Fetch coordinator analytics when the new tab (tab 5) is active
   useEffect(() => {
     if (activeTab === 5 || !coordinatorAnalyticsLoaded) {
       fetchCoordinatorAnalytics();
@@ -686,8 +679,7 @@ const AdminDashboard = () => {
                                 </p>
                               </div>
                             </div>
-                            {/* Discussion Matter */}
-                            <div className="flex items-start">
+                            {/* <div className="flex items-start">
                               <Hash className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium text-gray-500">
@@ -698,7 +690,7 @@ const AdminDashboard = () => {
                                     "N/A"}
                                 </p>
                               </div>
-                            </div>
+                            </div> */}
 
                             {/* Type */}
                             <div className="flex items-start">
@@ -714,7 +706,7 @@ const AdminDashboard = () => {
                             </div>
 
                             {/* Specific Option */}
-                            <div className="flex items-start">
+                            {/* <div className="flex items-start">
                               <Tag className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
                               <div>
                                 <p className="text-sm font-medium text-gray-500">
@@ -725,7 +717,7 @@ const AdminDashboard = () => {
                                     "N/A"}
                                 </p>
                               </div>
-                            </div>
+                            </div> */}
 
                             {/* State */}
                             <div className="flex items-start">
@@ -790,6 +782,31 @@ const AdminDashboard = () => {
                               </div>
                             </div>
 
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                                <Cpu className="h-5 w-5 mr-2 text-blue-600" />
+                                New Technologies Info
+                              </h4>
+                              {user.onboarding?.technologies?.length > 0 ? (
+                                <ul className="list-disc list-inside text-gray-800">
+                                  {user.onboarding.technologies.map(
+                                    (tech, idx) => (
+                                      <li key={idx}>
+                                        <span className="font-semibold">
+                                          {tech.category}
+                                        </span>
+                                        : {tech.item}
+                                      </li>
+                                    )
+                                  )}
+                                </ul>
+                              ) : (
+                                <p className="text-gray-500">
+                                  No technologies added.
+                                </p>
+                              )}
+                            </div>
+
                             {/* Category */}
                             <div className="flex items-start">
                               <Tag className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
@@ -801,6 +818,33 @@ const AdminDashboard = () => {
                                   {user.onboarding?.details?.category || "N/A"}
                                 </p>
                               </div>
+                            </div>
+
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                                <Cpu className="h-5 w-5 mr-2 text-blue-600" />
+                                collaborativeOptions
+                              </h4>
+                              {user.onboarding.details.collaborativeOptions
+                                ?.length > 0 ? (
+                                <ul className="list-disc list-inside text-gray-800 mb-2">
+                                  {user.onboarding.details.collaborativeOptions.map(
+                                    (opt) => (
+                                      <li key={opt}>{opt}</li>
+                                    )
+                                  )}
+                                </ul>
+                              ) : (
+                                <p className="text-gray-500 mb-2">
+                                  None selected
+                                </p>
+                              )}
+                              {user.onboarding.details.collaborativeOther && (
+                                <p className="text-gray-600">
+                                  <span className="font-semibold">Other:</span>{" "}
+                                  {user.onboarding.details.collaborativeOther}
+                                </p>
+                              )}
                             </div>
                           </div>
 
@@ -854,7 +898,7 @@ const AdminDashboard = () => {
                             )}
                           </div>
 
-                          {user.onboarding?.details && (
+                          {/* {user.onboarding?.details && (
                             <div className="mb-4">
                               <h4 className="font-medium text-gray-800 mb-2 flex items-center">
                                 <Cpu className="h-5 w-5 mr-2 text-blue-600" />
@@ -903,7 +947,7 @@ const AdminDashboard = () => {
                                 </table>
                               </div>
                             </div>
-                          )}
+                          )} */}
                           <div className="mt-4">
                             {!assignForm.show ||
                             assignForm.userId !== user._id ? (

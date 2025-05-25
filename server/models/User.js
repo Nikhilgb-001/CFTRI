@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
         discussionMatter: {
           type: String,
           enum: [
+            "",
             "Bakery Products",
             "Beverage Products",
             "Cereal Products",
@@ -24,6 +25,7 @@ const userSchema = new mongoose.Schema(
             "Plantation & Spice Products",
             "Protein Specialty Products",
           ],
+          required: false,
         },
         type: {
           type: String,
@@ -57,6 +59,9 @@ const userSchema = new mongoose.Schema(
           type: mongoose.Schema.Types.ObjectId,
           ref: "Coordinator",
         },
+        collaborativeOptions: [{ type: String }],
+        collaborativeOther: { type: String },
+        projectMode: { type: String },
       },
 
       contactPersons: [

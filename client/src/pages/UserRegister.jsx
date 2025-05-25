@@ -734,6 +734,7 @@ const UserRegister = () => {
     name: "",
     email: "",
     password: "",
+    contact: "",
     onboarding: {
       details: {
         subject: "",
@@ -746,22 +747,12 @@ const UserRegister = () => {
         gender: "",
         country: "",
         category: "",
+        collaborativeOptions: [],
+        collaborativeOther: "",
       },
-      contactPersons: [
-        {
-          name: "",
-          emailType: "",
-          emailDetail: "",
-          contactNumberType: "",
-          mobileDetail: "",
-          organization: "",
-        },
-      ],
-      technologies: [{ item: "" }, { item: "" }, { item: "" }],
     },
   });
 
-  const [step, setStep] = useState(1);
   const [showSpecificOptions, setShowSpecificOptions] = useState(false);
   const [specificOptions, setSpecificOptions] = useState([]);
   const navigate = useNavigate();
@@ -811,6 +802,17 @@ const UserRegister = () => {
         break;
       default:
         setShowSpecificOptions(false);
+        // Reset specific option when discussion matter changes
+        setFormData((prev) => ({
+          ...prev,
+          onboarding: {
+            ...prev.onboarding,
+            details: {
+              ...prev.onboarding.details,
+              specificOption: "",
+            },
+          },
+        }));
         break;
     }
   }, [formData.onboarding.details.discussionMatter]);
@@ -843,26 +845,10 @@ const UserRegister = () => {
           onboarding: { ...prev.onboarding, contactPersons: updatedContacts },
         };
       });
-    } else if (name.startsWith("onboarding.technologies")) {
-      const parts = name.split(".");
-      const indexMatch = parts[1].match(/\[(\d+)\]/);
-      const index = indexMatch ? parseInt(indexMatch[1]) : 0;
-      const field = parts[2];
-      setFormData((prev) => {
-        const updatedTechs = [...prev.onboarding.technologies];
-        updatedTechs[index] = { ...updatedTechs[index], [field]: value };
-        return {
-          ...prev,
-          onboarding: { ...prev.onboarding, technologies: updatedTechs },
-        };
-      });
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
-
-  const handleNext = () => setStep((prev) => prev + 1);
-  const handlePrev = () => setStep((prev) => prev - 1);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -879,6 +865,8 @@ const UserRegister = () => {
       },
     };
 
+    console.log("payload", preparedData);
+
     try {
       const res = await axios.post(
         "http://localhost:5000/auth/register/user",
@@ -893,711 +881,549 @@ const UserRegister = () => {
     }
   };
 
-  const today = new Date().toISOString().split("T")[0];
-
   return (
-    // <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
-    //   <div className="w-full max-w-2xl bg-white rounded-lg shadow-xl overflow-hidden">
-    //     <div className="p-6">
-    //       <h2 className="text-3xl font-bold text-center text-blue-900 mb-6">
-    //         User Onboarding
-    //       </h2>
-    //       <form onSubmit={handleSubmit}>
-    //         {step === 1 && (
-    //           <div>
-    //             <h3 className="text-xl font-semibold text-blue-800 mb-4">
-    //               Step 1: Basic Details
-    //             </h3>
-    //             <div className="space-y-4">
-    //               <input
-    //                 type="text"
-    //                 name="name"
-    //                 placeholder="Name"
-    //                 value={formData.name}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               />
-    //               <input
-    //                 type="email"
-    //                 name="email"
-    //                 placeholder="Email"
-    //                 value={formData.email}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               />
-    //               <input
-    //                 type="password"
-    //                 name="password"
-    //                 placeholder="Password"
-    //                 value={formData.password}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               />
-    //               <input
-    //                 type="text"
-    //                 name="onboarding.details.subject"
-    //                 placeholder="Subject"
-    //                 value={formData.onboarding.details.subject}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               />
-
-    //               {/* State */}
-    //               <input
-    //                 type="text"
-    //                 name="onboarding.details.state"
-    //                 placeholder="State"
-    //                 value={formData.onboarding.details.state}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
-    //               />
-
-    //               {/* Address */}
-    //               <input
-    //                 type="text"
-    //                 name="onboarding.details.address"
-    //                 placeholder="Address"
-    //                 value={formData.onboarding.details.address}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
-    //               />
-
-    //               {/* Gender */}
-    //               <select
-    //                 name="onboarding.details.gender"
-    //                 value={formData.onboarding.details.gender}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
-    //               >
-    //                 <option value="">Select Gender</option>
-    //                 <option value="Male">Male</option>
-    //                 <option value="Female">Female</option>
-    //                 <option value="Other">Other</option>
-    //               </select>
-
-    //               {/* Country */}
-    //               <input
-    //                 type="text"
-    //                 name="onboarding.details.country"
-    //                 placeholder="Country"
-    //                 value={formData.onboarding.details.country}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
-    //               />
-
-    //               {/* Category */}
-    //               <select
-    //                 name="onboarding.details.category"
-    //                 value={formData.onboarding.details.category}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
-    //               >
-    //                 <option value="">Select Category</option>
-    //                 <option value="SC/ST">SC/ST</option>
-    //                 <option value="General">General</option>
-    //                 <option value="OBC">OBC</option>
-    //               </select>
-
-    //               {/* Place */}
-    //               <input
-    //                 type="text"
-    //                 name="onboarding.details.place"
-    //                 placeholder="Place"
-    //                 value={formData.onboarding.details.place}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
-    //               />
-
-    //               <input
-    //                 type="date"
-    //                 name="onboarding.details.expectedCloseDate"
-    //                 value={formData.onboarding.details.expectedCloseDate}
-    //                 onChange={handleChange}
-    //                 min={today}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               />
-    //             </div>
-    //             <div className="flex justify-end mt-6">
-    //               <button
-    //                 type="button"
-    //                 onClick={handleNext}
-    //                 className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300"
-    //               >
-    //                 Next
-    //               </button>
-    //             </div>
-    //           </div>
-    //         )}
-    //         {step === 2 && (
-    //           <div>
-    //             <h3 className="text-xl font-semibold text-blue-800 mb-4">
-    //               Step 2: Contact Person
-    //             </h3>
-    //             <div className="space-y-4">
-    //               <input
-    //                 type="text"
-    //                 name="onboarding.contactPersons[0].name"
-    //                 placeholder="Contact Person Name"
-    //                 value={formData.onboarding.contactPersons[0].name}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               />
-    //               <select
-    //                 name="onboarding.contactPersons[0].emailType"
-    //                 value={formData.onboarding.contactPersons[0].emailType}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               >
-    //                 <option value="">Select Email Type</option>
-    //                 <option value="personal">Personal</option>
-    //                 <option value="work">Work</option>
-    //                 <option value="other">Other</option>
-    //               </select>
-    //               {formData.onboarding.contactPersons[0].emailType && (
-    //                 <input
-    //                   type="email"
-    //                   name="onboarding.contactPersons[0].emailDetail"
-    //                   placeholder="Enter Email Detail"
-    //                   value={formData.onboarding.contactPersons[0].emailDetail}
-    //                   onChange={handleChange}
-    //                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //                 />
-    //               )}
-    //               <select
-    //                 name="onboarding.contactPersons[0].contactNumberType"
-    //                 value={
-    //                   formData.onboarding.contactPersons[0].contactNumberType
-    //                 }
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               >
-    //                 <option value="">Select Contact Number Type</option>
-    //                 <option value="mobile">Mobile</option>
-    //                 <option value="landline">Landline</option>
-    //                 <option value="other">Other</option>
-    //               </select>
-    //               {formData.onboarding.contactPersons[0].contactNumberType && (
-    //                 <input
-    //                   type="text"
-    //                   name="onboarding.contactPersons[0].mobileDetail"
-    //                   placeholder="Enter Mobile Detail"
-    //                   value={formData.onboarding.contactPersons[0].mobileDetail}
-    //                   onChange={handleChange}
-    //                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //                 />
-    //               )}
-    //               <input
-    //                 type="text"
-    //                 name="onboarding.contactPersons[0].organization"
-    //                 placeholder="Organization"
-    //                 value={formData.onboarding.contactPersons[0].organization}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               />
-    //             </div>
-    //             <div className="flex justify-between mt-6">
-    //               <button
-    //                 type="button"
-    //                 onClick={handlePrev}
-    //                 className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-300"
-    //               >
-    //                 Back
-    //               </button>
-    //               <button
-    //                 type="button"
-    //                 onClick={handleNext}
-    //                 className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300"
-    //               >
-    //                 Next
-    //               </button>
-    //             </div>
-    //           </div>
-    //         )}
-    //         {step === 3 && (
-    //           <div>
-    //             <h3 className="text-xl font-semibold text-blue-800 mb-4">
-    //               Step 3: Technologies
-    //             </h3>
-    //             {/* Dropdown for Broad Area */}
-    //             <div className="space-y-4">
-    //               {/* Discussion Matter Dropdown */}
-    //               <select
-    //                 name="onboarding.details.discussionMatter"
-    //                 value={formData.onboarding.details.discussionMatter}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               >
-    //                 <option value="">Select Topic of Interest</option>
-    //                 {discussionMatterOptions.map((topic, i) => (
-    //                   <option key={i} value={topic}>
-    //                     {topic}
-    //                   </option>
-    //                 ))}
-    //               </select>
-
-    //               {showSpecificOptions && (
-    //                 <select
-    //                   name="onboarding.details.specificOption"
-    //                   value={formData.onboarding.details.specificOption}
-    //                   onChange={handleChange}
-    //                   className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //                 >
-    //                   <option value="">
-    //                     Select {formData.onboarding.details.discussionMatter}
-    //                   </option>
-    //                   {specificOptions.map((option, idx) => (
-    //                     <option key={idx} value={option}>
-    //                       {option}
-    //                     </option>
-    //                   ))}
-    //                 </select>
-    //               )}
-    //             </div>
-    //             <div className="space-y-4 mt-4">
-    //               <select
-    //                 name="onboarding.details.type"
-    //                 value={formData.onboarding.details.type}
-    //                 onChange={handleChange}
-    //                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    //               >
-    //                 <option value="">Select Type</option>
-    //                 {typeOptions.map((t, i) => (
-    //                   <option key={i} value={t}>
-    //                     {t}
-    //                   </option>
-    //                 ))}
-    //               </select>
-    //             </div>
-    //             <div className="flex justify-between mt-6">
-    //               <button
-    //                 type="button"
-    //                 onClick={handlePrev}
-    //                 className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-300"
-    //               >
-    //                 Back
-    //               </button>
-    //               <button
-    //                 type="submit"
-    //                 className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors duration-300"
-    //               >
-    //                 Submit
-    //               </button>
-    //             </div>
-    //           </div>
-    //         )}
-    //       </form>
-    //     </div>
-    //   </div>
-    // </div>
-
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-3xl">
-        {/* Progress Bar */}
-        <div className="h-2 bg-gray-200">
-          <div
-            className="h-full bg-gradient-to-r from-blue-400 to-purple-500 transition-all duration-500"
-            style={{ width: `${(step / 2) * 100}%` }}
-          ></div>
-        </div>
-
         <div className="p-8">
           <div className="text-center mb-8">
             <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
-              User Onboarding
+              User Registration
             </h2>
-            <p className="text-gray-500">
-              Complete your profile in just 2 simple steps
-            </p>
+            <p className="text-gray-500">Create your account to get started</p>
           </div>
 
           <form onSubmit={handleSubmit}>
-            {step === 1 && (
-              <div className="space-y-6">
-                <div className="bg-blue-50 p-4 rounded-xl">
-                  <h3 className="text-2xl font-semibold text-blue-700 flex items-center">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 mr-3">
-                      1
-                    </span>
-                    Personal & Technical Details
-                  </h3>
-                  <p className="text-gray-500 ml-11">
-                    Tell us about yourself and your interests
-                  </p>
+            <div className="space-y-6">
+              <div className="bg-blue-50 p-4 rounded-xl">
+                <h3 className="text-2xl font-semibold text-blue-700">
+                  Personal & Technical Details
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="John Doe"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    required
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      placeholder="John Doe"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="john@example.com"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      name="password"
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    name="onboarding.details.subject"
+                    placeholder="Your subject"
+                    value={formData.onboarding.details.subject}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Subject
-                    </label>
-                    <input
-                      type="text"
-                      name="onboarding.details.subject"
-                      placeholder="Your subject"
-                      value={formData.onboarding.details.subject}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gender
+                  </label>
+                  <select
+                    name="onboarding.details.gender"
+                    value={formData.onboarding.details.gender}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Gender
-                    </label>
-                    <select
-                      name="onboarding.details.gender"
-                      value={formData.onboarding.details.gender}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    name="onboarding.details.category"
+                    value={formData.onboarding.details.category}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Select Category</option>
+                    <option value="SC/ST">SC/ST</option>
+                    <option value="General">General</option>
+                    <option value="OBC">OBC</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Category
-                    </label>
-                    <select
-                      name="onboarding.details.category"
-                      value={formData.onboarding.details.category}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    >
-                      <option value="">Select Category</option>
-                      <option value="SC/ST">SC/ST</option>
-                      <option value="General">General</option>
-                      <option value="OBC">OBC</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    name="onboarding.details.country"
+                    placeholder="Country"
+                    value={formData.onboarding.details.country}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Country
-                    </label>
-                    <input
-                      type="text"
-                      name="onboarding.details.country"
-                      placeholder="Country"
-                      value={formData.onboarding.details.country}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    name="onboarding.details.state"
+                    placeholder="State"
+                    value={formData.onboarding.details.state}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      State
-                    </label>
-                    <input
-                      type="text"
-                      name="onboarding.details.state"
-                      placeholder="State"
-                      value={formData.onboarding.details.state}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Place
+                  </label>
+                  <input
+                    type="text"
+                    name="onboarding.details.place"
+                    placeholder="Place"
+                    value={formData.onboarding.details.place}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Place
-                    </label>
-                    <input
-                      type="text"
-                      name="onboarding.details.place"
-                      placeholder="Place"
-                      value={formData.onboarding.details.place}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    name="onboarding.details.address"
+                    placeholder="Full Address"
+                    value={formData.onboarding.details.address}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      name="onboarding.details.address"
-                      placeholder="Full Address"
-                      value={formData.onboarding.details.address}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contact Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="contact"
+                    placeholder="e.g. +91-9876543210"
+                    value={formData.contact}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg 
+               focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Date
-                    </label>
-                    <input
-                      type="date"
-                      name="onboarding.details.expectedCloseDate"
-                      value={formData.onboarding.details.expectedCloseDate}
-                      onChange={handleChange}
-                      min={today}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+                {/* <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    name="onboarding.details.expectedCloseDate"
+                    value={formData.onboarding.details.expectedCloseDate}
+                    onChange={handleChange}
+                    min={today}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div> */}
 
-                  {/* Moved from step 3 */}
+                {/* <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Topic of Interest
+                  </label>
+                  <select
+                    name="onboarding.details.discussionMatter"
+                    value={formData.onboarding.details.discussionMatter}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Select Topic of Interest</option>
+                    {discussionMatterOptions.map((topic, i) => (
+                      <option key={i} value={topic}>
+                        {topic}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {showSpecificOptions && (
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Topic of Interest
+                      Specific {formData.onboarding.details.discussionMatter}
                     </label>
                     <select
-                      name="onboarding.details.discussionMatter"
-                      value={formData.onboarding.details.discussionMatter}
+                      name="onboarding.details.specificOption"
+                      value={formData.onboarding.details.specificOption}
                       onChange={handleChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     >
-                      <option value="">Select Topic of Interest</option>
-                      {discussionMatterOptions.map((topic, i) => (
-                        <option key={i} value={topic}>
-                          {topic}
+                      <option value="">
+                        Select {formData.onboarding.details.discussionMatter}
+                      </option>
+                      {specificOptions.map((option, idx) => (
+                        <option key={idx} value={option}>
+                          {option}
                         </option>
                       ))}
                     </select>
                   </div>
+                )} */}
 
-                  {showSpecificOptions && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Project Type
+                  </label>
+                  <div className="flex gap-6">
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        name="onboarding.details.projectMode"
+                        value="collaborative"
+                        checked={
+                          formData.onboarding.details.projectMode ===
+                          "collaborative"
+                        }
+                        onChange={handleChange}
+                        className="mr-2"
+                      />
+                      Collaborative Project
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        name="onboarding.details.projectMode"
+                        value="transfer"
+                        checked={
+                          formData.onboarding.details.projectMode === "transfer"
+                        }
+                        onChange={handleChange}
+                        className="mr-2"
+                      />
+                      Technology Transfer
+                    </label>
+                  </div>
+                </div>
+
+                {formData.onboarding.details.projectMode ===
+                  "collaborative" && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Collaborative Focus Areas
+                    </label>
+                    <div className="space-y-2">
+                      {[
+                        "Product Development",
+                        "Process Optimization",
+                        "Shelf-life Extension",
+                      ].map((option) => (
+                        <label key={option} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            value={option}
+                            checked={formData.onboarding.details.collaborativeOptions?.includes(
+                              option
+                            )}
+                            onChange={(e) => {
+                              const updated = e.target.checked
+                                ? [
+                                    ...formData.onboarding.details
+                                      .collaborativeOptions,
+                                    option,
+                                  ]
+                                : formData.onboarding.details.collaborativeOptions.filter(
+                                    (o) => o !== option
+                                  );
+                              setFormData((prev) => ({
+                                ...prev,
+                                onboarding: {
+                                  ...prev.onboarding,
+                                  details: {
+                                    ...prev.onboarding.details,
+                                    collaborativeOptions: updated,
+                                  },
+                                },
+                              }));
+                            }}
+                          />
+                          {option}
+                        </label>
+                      ))}
+
+                      {/* Others input */}
+                      <label className="block text-sm font-medium text-gray-700 mt-4">
+                        Others
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Describe other collaborative focus..."
+                        value={formData.onboarding.details.collaborativeOther}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            onboarding: {
+                              ...prev.onboarding,
+                              details: {
+                                ...prev.onboarding.details,
+                                collaborativeOther: e.target.value,
+                              },
+                            },
+                          }))
+                        }
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {formData.onboarding.details.projectMode === "transfer" && (
+                  <>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Specific {formData.onboarding.details.discussionMatter}
+                        Topic of Interest
                       </label>
                       <select
-                        name="onboarding.details.specificOption"
-                        value={formData.onboarding.details.specificOption}
+                        name="onboarding.details.discussionMatter"
+                        value={formData.onboarding.details.discussionMatter}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                       >
-                        <option value="">
-                          Select {formData.onboarding.details.discussionMatter}
-                        </option>
-                        {specificOptions.map((option, idx) => (
-                          <option key={idx} value={option}>
-                            {option}
+                        <option value="">Select Topic of Interest</option>
+                        {discussionMatterOptions.map((topic, i) => (
+                          <option key={i} value={topic}>
+                            {topic}
                           </option>
                         ))}
                       </select>
                     </div>
-                  )}
 
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Type
-                    </label>
-                    <select
-                      name="onboarding.details.type"
-                      value={formData.onboarding.details.type}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    >
-                      <option value="">Select Type</option>
-                      {typeOptions.map((t, i) => (
-                        <option key={i} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                    {/* Specific Option Dropdown */}
+                    {showSpecificOptions && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Specific{" "}
+                          {formData.onboarding.details.discussionMatter}
+                        </label>
+                        <select
+                          name="onboarding.details.specificOption"
+                          value={formData.onboarding.details.specificOption}
+                          onChange={handleChange}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        >
+                          <option value="">
+                            Select{" "}
+                            {formData.onboarding.details.discussionMatter}
+                          </option>
+                          {specificOptions.map((option, idx) => (
+                            <option key={idx} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
 
-                <div className="flex justify-end mt-6">
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-8 py-3 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-md hover:shadow-lg flex items-center"
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type
+                  </label>
+                  <select
+                    name="onboarding.details.type"
+                    value={formData.onboarding.details.type}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
-                    Next Step <ChevronRightIcon className="w-5 h-5 ml-2" />
-                  </button>
+                    <option value="">Select Type</option>
+                    {typeOptions.map((t, i) => (
+                      <option key={i} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </div>
-            )}
 
-            {step === 2 && (
-              <div className="space-y-6">
-                <div className="bg-blue-50 p-4 rounded-xl">
-                  <h3 className="text-2xl font-semibold text-blue-700 flex items-center">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 mr-3">
-                      2
-                    </span>
+                {/* Contact Person Fields (moved from step 2) */}
+                {/* <div className="md:col-span-2">
+                  <h4 className="text-lg font-medium text-gray-800 mb-3 mt-6">
                     Contact Information
-                  </h3>
-                  <p className="text-gray-500 ml-11">Who should we contact?</p>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Contact Person Name
-                    </label>
-                    <input
-                      type="text"
-                      name="onboarding.contactPersons[0].name"
-                      placeholder="Contact Person Name"
-                      value={formData.onboarding.contactPersons[0].name}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  </h4>
+                  <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email Type
+                        Contact Person Name
                       </label>
-                      <select
-                        name="onboarding.contactPersons[0].emailType"
-                        value={formData.onboarding.contactPersons[0].emailType}
+                      <input
+                        type="text"
+                        name="onboarding.contactPersons[0].name"
+                        placeholder="Contact Person Name"
+                        value={formData.onboarding.contactPersons[0].name}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      >
-                        <option value="">Select Email Type</option>
-                        <option value="personal">Personal</option>
-                        <option value="work">Work</option>
-                        <option value="other">Other</option>
-                      </select>
+                      />
                     </div>
 
-                    {formData.onboarding.contactPersons[0].emailType && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Email Address
+                          Email Type
                         </label>
-                        <input
-                          type="email"
-                          name="onboarding.contactPersons[0].emailDetail"
-                          placeholder="Enter Email Detail"
+                        <select
+                          name="onboarding.contactPersons[0].emailType"
                           value={
-                            formData.onboarding.contactPersons[0].emailDetail
+                            formData.onboarding.contactPersons[0].emailType
                           }
                           onChange={handleChange}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        />
+                        >
+                          <option value="">Select Email Type</option>
+                          <option value="personal">Personal</option>
+                          <option value="work">Work</option>
+                          <option value="other">Other</option>
+                        </select>
                       </div>
-                    )}
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {formData.onboarding.contactPersons[0].emailType && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email Address
+                          </label>
+                          <input
+                            type="email"
+                            name="onboarding.contactPersons[0].emailDetail"
+                            placeholder="Enter Email Detail"
+                            value={
+                              formData.onboarding.contactPersons[0].emailDetail
+                            }
+                            onChange={handleChange}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Contact Number Type
+                        </label>
+                        <select
+                          name="onboarding.contactPersons[0].contactNumberType"
+                          value={
+                            formData.onboarding.contactPersons[0]
+                              .contactNumberType
+                          }
+                          onChange={handleChange}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        >
+                          <option value="">Select Contact Number Type</option>
+                          <option value="mobile">Mobile</option>
+                          <option value="landline">Landline</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+
+                      {formData.onboarding.contactPersons[0]
+                        .contactNumberType && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Phone Number
+                          </label>
+                          <input
+                            type="text"
+                            name="onboarding.contactPersons[0].mobileDetail"
+                            placeholder="Enter Mobile Detail"
+                            value={
+                              formData.onboarding.contactPersons[0].mobileDetail
+                            }
+                            onChange={handleChange}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          />
+                        </div>
+                      )}
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Contact Number Type
+                        Organization
                       </label>
-                      <select
-                        name="onboarding.contactPersons[0].contactNumberType"
+                      <input
+                        type="text"
+                        name="onboarding.contactPersons[0].organization"
+                        placeholder="Organization"
                         value={
-                          formData.onboarding.contactPersons[0]
-                            .contactNumberType
+                          formData.onboarding.contactPersons[0].organization
                         }
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      >
-                        <option value="">Select Contact Number Type</option>
-                        <option value="mobile">Mobile</option>
-                        <option value="landline">Landline</option>
-                        <option value="other">Other</option>
-                      </select>
+                      />
                     </div>
-
-                    {formData.onboarding.contactPersons[0]
-                      .contactNumberType && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Phone Number
-                        </label>
-                        <input
-                          type="text"
-                          name="onboarding.contactPersons[0].mobileDetail"
-                          placeholder="Enter Mobile Detail"
-                          value={
-                            formData.onboarding.contactPersons[0].mobileDetail
-                          }
-                          onChange={handleChange}
-                          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        />
-                      </div>
-                    )}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Organization
-                    </label>
-                    <input
-                      type="text"
-                      name="onboarding.contactPersons[0].organization"
-                      placeholder="Organization"
-                      value={formData.onboarding.contactPersons[0].organization}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-between mt-6">
-                  <button
-                    type="button"
-                    onClick={handlePrev}
-                    className="bg-gray-200 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-300 transition-all duration-300 shadow-md hover:shadow-lg flex items-center"
-                  >
-                    <ChevronLeftIcon className="w-5 h-5 mr-2" /> Previous
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg flex items-center"
-                  >
-                    Complete Registration <CheckIcon className="w-5 h-5 ml-2" />
-                  </button>
-                </div>
+                </div> */}
               </div>
-            )}
+
+              <div className="flex justify-end mt-6">
+                <button
+                  type="submit"
+                  className="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md hover:shadow-lg flex items-center"
+                >
+                  Register <CheckIcon className="w-5 h-5 ml-2" />
+                </button>
+              </div>
+            </div>
           </form>
         </div>
       </div>
