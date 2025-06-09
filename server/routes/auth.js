@@ -4,6 +4,10 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import Admin from "../models/Admin.js";
 import Coordinator from "../models/Coordinator.js";
+import Dean from "../models/Dean.js";
+import auth from "../middleware/auth.js";
+
+console.log("⚙️  auth.js loaded, mounting /assigned-users");
 
 const router = express.Router();
 
@@ -110,6 +114,49 @@ router.post("/register/admin", async (req, res) => {
   }
 });
 
+router.post("/register/dean", async (req, res) => {
+  try {
+    const { name, email, contact, password } = req.body;
+    const existing = await Dean.findOne({ email });
+    if (existing)
+      return res.status(400).json({ message: "Dean already exists" });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const dean = new Dean({ name, email, contact, password: hashedPassword });
+    await dean.save();
+    const token = jwt.sign(
+      { id: dean._id, role: "dean" },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({ token, dean });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.get("/assigned-users", auth, async (req, res) => {
+  console.log(">>> /auth/assigned-users called, user:", req.user);
+  // 1) Must be a dean
+  if (req.user.role !== "dean") {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+
+  try {
+    const deanId = req.user.id;
+    // 2) Find all leads/users assigned to this dean
+    const users = await User.find({
+      "onboarding.details.coordinator": deanId,
+    }).select("-password");
+
+    // 3) Send them back
+    res.json(users);
+  } catch (err) {
+    console.error("assigned-users error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Login admin
 router.post("/login/admin", async (req, res) => {
   try {
@@ -185,28 +232,70 @@ router.post("/login/coordinator", async (req, res) => {
 router.post("/login/dean", async (req, res) => {
   try {
     const { email, password } = req.body;
-    // only allow coordinators who have been promoted to dean
-    const dean = await Coordinator.findOne({ email, role: "dean" });
-    if (!dean)
-      return res
-        .status(400)
-        .json({ message: "Dean not found or not promoted yet" });
 
+    // 1) Try to find a “new” dean
+    let dean = await Dean.findOne({ email });
+
+    // 2) If not found, check for a promoted coordinator
+    if (!dean) {
+      dean = await Coordinator.findOne({ email, role: "dean" });
+    }
+
+    if (!dean) {
+      return res.status(400).json({ message: "Dean not found" });
+    }
+
+    // 3) Password check
     const isMatch = await bcrypt.compare(password, dean.password);
-    if (!isMatch)
+    if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
 
+    // 4) Issue JWT
     const token = jwt.sign(
       { id: dean._id, role: "dean" },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    // return the dean record (you can alias it or omit sensitive fields)
-    res.json({ token, dean });
+    // 5) Return the profile (minus the password)
+    const { password: _, ...safeDean } = dean.toObject();
+    res.json({ token, dean: safeDean });
   } catch (err) {
     console.error("Dean login error:", err);
     res.status(500).json({ message: err.message });
+  }
+});
+
+router.get("/profile", auth, async (req, res) => {
+  try {
+    const { id, role } = req.user;
+
+    let user = null;
+    if (role === "dean") {
+      // 1) new-style Deans
+      user = await Dean.findById(id).select("-password");
+      // 2) promoted Coordinators
+      if (!user) {
+        user = await Coordinator.findOne({ _id: id, role: "dean" }).select(
+          "-password"
+        );
+      }
+    } else {
+      // other roles
+      const Model =
+        role === "admin" ? Admin : role === "coordinator" ? Coordinator : User;
+      user = await Model.findById(id).select("-password");
+    }
+
+    if (!user) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error("Profile fetch error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

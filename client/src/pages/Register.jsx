@@ -57,6 +57,17 @@ const Register = () => {
           roleName: "Coordinator",
           description: "Register as an event coordinator",
         };
+      case "dean":
+        return {
+          bgFrom: "from-purple-50",
+          bgTo: "to-indigo-50",
+          primary: "purple",
+          gradientFrom: "from-purple-600",
+          gradientTo: "to-indigo-600",
+          icon: <Shield className="h-6 w-6" />,
+          roleName: "Dean",
+          description: "Register as a dean of students",
+        };
       default:
         return {
           bgFrom: "from-blue-50",

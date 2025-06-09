@@ -34,6 +34,8 @@ const DeanDashboard = () => {
   const [dean, setDean] = useState(null);
   const [coords, setCoords] = useState([]);
   const [usersByCoord, setUsersByCoord] = useState({});
+  const [assignedUsers, setAssignedUsers] = useState([]);
+
   const [newCoord, setNewCoord] = useState({
     name: "",
     email: "",
@@ -75,7 +77,7 @@ const DeanDashboard = () => {
       setIsLoading(true);
       // Fetch dean profile
       const { data: deanData } = await axios.get(
-        "http://localhost:5000/profile",
+        "http://localhost:5000/auth/profile",
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setDean(deanData);
@@ -103,6 +105,7 @@ const DeanDashboard = () => {
         usersData[c._id] = usersResults[i].data;
       });
       setUsersByCoord(usersData);
+      setAssignedUsers(usersData[deanData._id] || []);
 
       // Fetch tech transfer flows if on that tab
       if (selectedTab === "techTransfer" || selectedTab === "annualReports") {
@@ -137,6 +140,26 @@ const DeanDashboard = () => {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
+
+  const fetchAssignedUsers = useCallback(async () => {
+    if (!dean) return;
+    try {
+      const { data: mine } = await axios.get(
+        "http://localhost:5000/auth/assigned-users",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAssignedUsers(mine);
+    } catch (err) {
+      console.error("couldn’t fetch assigned users", err);
+      toast.error("Could not load your assigned users");
+    }
+  }, [dean, token]);
+
+  useEffect(() => {
+    if (selectedTab === "assignedUsers") {
+      fetchAssignedUsers();
+    }
+  }, [selectedTab, fetchAssignedUsers]);
 
   const generateTechTransferReport = async () => {
     if (selectedFlows.length === 0) {
@@ -416,6 +439,7 @@ const DeanDashboard = () => {
         <div className="flex overflow-x-auto">
           {[
             { id: "coordinators", label: "Coordinators", icon: Users },
+            { id: "assignedUsers", label: "Assigned Users", icon: Users },
             { id: "techTransfer", label: "Tech Transfer", icon: Settings },
             { id: "annualReports", label: "Analytics", icon: BarChart2 },
           ].map((tab) => (
@@ -740,6 +764,40 @@ const DeanDashboard = () => {
                 })
               )}
             </div>
+          </div>
+        )}
+
+        {selectedTab === "assignedUsers" && (
+          <div className="bg-white p-6 rounded-xl shadow-sm">
+            <h2 className="text-2xl font-bold mb-4">Your Assigned Users</h2>
+            {assignedUsers.length === 0 ? (
+              <p>No users have been assigned to you yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">{/* … */}</thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {assignedUsers.map((u) => (
+                      <tr key={u._id}>
+                        <td className="px-4 py-2 text-sm text-gray-900">
+                          {u.name}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {u._id}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {u.contact || "—"}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {/* since it’s you, you know it’s you */}
+                          {dean.name}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

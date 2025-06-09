@@ -7,7 +7,9 @@ const deanSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     contact: { type: String },
     password: { type: String, required: true },
+    processedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
+
   { timestamps: true }
 );
 

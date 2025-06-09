@@ -24,6 +24,8 @@ const userSchema = new mongoose.Schema(
             "Microbiology & Fermentation",
             "Plantation & Spice Products",
             "Protein Specialty Products",
+            "collaborative",
+            "transfer",
           ],
           required: false,
         },
@@ -116,6 +118,7 @@ const userSchema = new mongoose.Schema(
 
     assignedTask: { type: String, default: "" },
     taskStatus: { type: String, default: "pending" },
+    processed: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

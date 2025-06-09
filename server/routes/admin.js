@@ -269,4 +269,62 @@ router.put(
   }
 );
 
+router.get("/users/processed", auth, adminOnly, async (req, res) => {
+  try {
+    const users = await User.find({ processed: true }).populate(
+      "onboarding.details.coordinator",
+      "name email"
+    );
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.put("/users/:userId/assign-dean", auth, adminOnly, async (req, res) => {
+  try {
+    const { deanId } = req.body;
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const dean = await Dean.findById(deanId);
+    if (!dean) return res.status(404).json({ message: "Dean not found" });
+
+    // 1) mark user processed without triggering full-model validation
+    await User.updateOne({ _id: user._id }, { $set: { processed: true } });
+
+    // 2) initialize dean.processedUsers if needed
+    dean.processedUsers = Array.isArray(dean.processedUsers)
+      ? dean.processedUsers
+      : [];
+
+    // 3) add user to dean’s processedUsers
+    if (!dean.processedUsers.some((id) => id.equals(user._id))) {
+      dean.processedUsers.push(user._id);
+      await dean.save();
+    }
+
+    return res.json({ message: "User assigned to Dean", dean });
+  } catch (err) {
+    console.error("assign-dean error:", err);
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// → Allow a Dean to fetch their assigned users
+router.get("/dean/processed-users", auth, async (req, res) => {
+  try {
+    // req.user.id is the Dean’s _id because of how your login issues the token
+    const dean = await Dean.findById(req.user.id).populate(
+      "processedUsers",
+      "name email contact"
+    );
+    if (!dean) return res.status(404).json({ message: "Dean not found" });
+    return res.json(dean.processedUsers);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;

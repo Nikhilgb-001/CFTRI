@@ -42,7 +42,10 @@ import {
   Edit2,
   ShieldCheck,
   Globe,
+  CheckCircle,
 } from "lucide-react";
+// import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 ChartJS.register(
   BarElement,
@@ -79,11 +82,13 @@ const AdminDashboard = () => {
     dailyLogins: null,
     monthlyLogins: null,
   });
+  const [processedUsers, setProcessedUsers] = useState([]);
+  const [loadingProcessed, setLoadingProcessed] = useState(false);
+
   const [chartDataLoaded, setChartDataLoaded] = useState(false);
   const [assignForm, setAssignForm] = useState({
     show: false,
     userId: "",
-    coordinatorId: "",
     task: "",
   });
   const [coordinators, setCoordinators] = useState([]);
@@ -94,6 +99,10 @@ const AdminDashboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const token = localStorage.getItem("token");
+
+  const [showDeanModal, setShowDeanModal] = useState(false);
+  const [userToAssign, setUserToAssign] = useState(null);
+  const [selectedDeanId, setSelectedDeanId] = useState("");
 
   // New state for coordinator analytics data
   const [coordinatorAnalytics, setCoordinatorAnalytics] = useState(null);
@@ -222,25 +231,6 @@ const AdminDashboard = () => {
     };
   }, [token]);
 
-  // Fetch coordinator analytics data for Coordinator Analytics tab
-  // const fetchCoordinatorAnalytics = useCallback(async () => {
-  //   try {
-  //     setIsCoordinatorAnalyticsRefreshing(true);
-  //     const res = await axios.get(
-  //       "http://localhost:5000/coordinator/analytics",
-  //       {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       }
-  //     );
-  //     setCoordinatorAnalytics(res.data);
-  //     setCoordinatorAnalyticsLoaded(true);
-  //   } catch (err) {
-  //     console.error("Error fetching coordinator analytics:", err);
-  //   } finally {
-  //     setIsCoordinatorAnalyticsRefreshing(false);
-  //   }
-  // }, [token]);
-
   const fetchUserLogs = useCallback(
     async (userId) => {
       // avoid re-fetch if already loading or loaded
@@ -348,6 +338,67 @@ const AdminDashboard = () => {
     }
   }, [activeTab, token]);
 
+  const fetchProcessedUsers = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/admin/users/processed",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setProcessedUsers(res.data);
+    } catch (err) {
+      console.error("Failed to reload processed users:", err);
+      toast.error("Could not reload processed users");
+    }
+  };
+
+  // useEffect(() => {
+  //   if (activeTab === 8) {
+  //     setLoadingProcessed(true);
+  //     axios
+  //       .get("http://localhost:5000/admin/users/processed", {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       })
+  //       .then((res) => setProcessedUsers(res.data))
+  //       .catch(console.error)
+  //       .finally(() => setLoadingProcessed(false));
+  //   }
+  // }, [activeTab, token]);
+
+  useEffect(() => {
+    if (activeTab === 8) {
+      setLoadingProcessed(true);
+
+      // 1) fetch list of Deans
+      axios
+        .get("http://localhost:5000/admin/deans", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          setDeans(res.data);
+        })
+        .catch((err) => {
+          console.error("Could not load deans", err);
+          toast.error("Failed to load Deans");
+        });
+
+      // 2) fetch the processed users
+      axios
+        .get("http://localhost:5000/admin/users/processed", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          setProcessedUsers(res.data);
+        })
+        .catch((err) => {
+          console.error("Could not load processed users", err);
+          toast.error("Failed to load processed users");
+        })
+        .finally(() => {
+          setLoadingProcessed(false);
+        });
+    }
+  }, [activeTab, token]);
+
   useEffect(() => {
     if (activeTab === 5 || !coordinatorAnalyticsLoaded) {
       fetchCoordinatorAnalytics();
@@ -394,7 +445,8 @@ const AdminDashboard = () => {
 
   const handleAssignChange = (e) => {
     const { name, value } = e.target;
-    setAssignForm((prev) => ({ ...prev, [name]: value }));
+    // setAssignForm((prev) => ({ ...prev, [name]: value }));
+    setAssignForm((f) => ({ ...f, [name]: value }));
   };
 
   const submitAssignForm = async (e) => {
@@ -477,6 +529,7 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
+        <ToastContainer position="top-center" autoClose={3000} />
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
@@ -503,20 +556,7 @@ const AdminDashboard = () => {
             <Users className="h-5 w-5 mr-2" />
             User Details
           </button>
-          {/* <button
-            onClick={() => {
-              setActiveTab(2);
-              setShowCreateLeadForm(false);
-            }}
-            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
-              activeTab === 2
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-blue-600 hover:bg-blue-50"
-            }`}
-          >
-            <BarChart2 className="h-5 w-5 mr-2" />
-            Analytics
-          </button> */}
+
           <button
             onClick={() => {
               setActiveTab(3);
@@ -562,21 +602,6 @@ const AdminDashboard = () => {
           </button>
 
           <button
-            onClick={() => {
-              setActiveTab(6);
-              setShowCreateLeadForm(false);
-            }}
-            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
-              activeTab === 6
-                ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-blue-600 hover:bg-blue-50"
-            }`}
-          >
-            <BookOpen className="h-5 w-5 mr-2" />
-            Tech Transfer
-          </button>
-
-          <button
             onClick={() => setActiveTab(7)}
             className={`flex items-center px-4 py-2 rounded-lg transition-all ${
               activeTab === 7
@@ -586,6 +611,21 @@ const AdminDashboard = () => {
           >
             <Users className="h-5 w-5 mr-2" />
             Coordinators
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab(8);
+              setShowCreateLeadForm(false);
+            }}
+            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
+              activeTab === 8
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <Check className="h-5 w-5 mr-2" />
+            Processed Users
           </button>
         </div>
 
@@ -679,18 +719,6 @@ const AdminDashboard = () => {
                                 </p>
                               </div>
                             </div>
-                            {/* <div className="flex items-start">
-                              <Hash className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-gray-500">
-                                  Discussion Matter
-                                </p>
-                                <p className="text-gray-800">
-                                  {user.onboarding?.details?.discussionMatter ||
-                                    "N/A"}
-                                </p>
-                              </div>
-                            </div> */}
 
                             {/* Type */}
                             <div className="flex items-start">
@@ -706,18 +734,6 @@ const AdminDashboard = () => {
                             </div>
 
                             {/* Specific Option */}
-                            {/* <div className="flex items-start">
-                              <Tag className="h-5 w-5 mr-3 text-blue-600 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-gray-500">
-                                  Category
-                                </p>
-                                <p className="text-gray-800">
-                                  {user.onboarding?.details?.specificOption ||
-                                    "N/A"}
-                                </p>
-                              </div>
-                            </div> */}
 
                             {/* State */}
                             <div className="flex items-start">
@@ -848,6 +864,41 @@ const AdminDashboard = () => {
                             </div>
                           </div>
 
+                          {/* Assigned Coordinator Display */}
+                          {/* {user.onboarding?.details?.coordinator && (
+                            <div className="mb-4">
+                              <p className="text-sm font-medium text-gray-700">
+                                Assigned Coordinator:
+                              </p>
+                              <p className="text-gray-800">
+                                {
+                                  coordinators.find(
+                                    (c) => String(c._id) === String(user.onboarding.details.coordinator)
+                                  )?.name || "Coordinator Assigned"
+                                }
+                              </p>
+                            </div>
+                          )} */}
+
+                          {user.onboarding?.details?.coordinator && (
+                            <div className="mb-4">
+                              <p className="text-sm font-medium text-gray-700">
+                                Assigned Coordinator:
+                              </p>
+                              <p className="text-gray-800">
+                                {typeof user.onboarding.details.coordinator ===
+                                "object"
+                                  ? user.onboarding.details.coordinator
+                                      .name /* populated object */
+                                  : coordinators.find(
+                                      (c) =>
+                                        c._id.toString() ===
+                                        user.onboarding.details.coordinator.toString()
+                                    )?.name || "Coordinator Assigned"}
+                              </p>
+                            </div>
+                          )}
+
                           <div className="mt-4">
                             <h4 className="text-sm font-medium text-gray-700 mb-2">
                               Action Logs
@@ -898,59 +949,17 @@ const AdminDashboard = () => {
                             )}
                           </div>
 
-                          {/* {user.onboarding?.details && (
-                            <div className="mb-4">
-                              <h4 className="font-medium text-gray-800 mb-2 flex items-center">
-                                <Cpu className="h-5 w-5 mr-2 text-blue-600" />
-                                Details
-                              </h4>
-                              <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                  <thead className="bg-gray-50">
-                                    <tr>
-                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                        Field
-                                      </th>
-                                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                        Value
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="bg-white divide-y divide-gray-200">
-                                    <tr>
-                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
-                                        Discussion Matter
-                                      </td>
-                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
-                                        {user.onboarding.details
-                                          .discussionMatter || "N/A"}
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
-                                        Category
-                                      </td>
-                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
-                                        {user.onboarding.details
-                                          .specificOption || "N/A"}
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
-                                        Type
-                                      </td>
-                                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-800">
-                                        {user.onboarding.details.type || "N/A"}
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                          )} */}
                           <div className="mt-4">
-                            {!assignForm.show ||
-                            assignForm.userId !== user._id ? (
+                            {user.onboarding?.details?.coordinator ? (
+                              <button
+                                className="bg-gray-300 text-gray-600 px-4 py-2 rounded-lg cursor-not-allowed flex items-center"
+                                disabled
+                              >
+                                <ArrowRight className="h-4 w-4 mr-2" />
+                                Coordinator Assigned
+                              </button>
+                            ) : !assignForm.show ||
+                              assignForm.userId !== user._id ? (
                               <button
                                 onClick={() => openAssignForm(user._id)}
                                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
@@ -1330,7 +1339,8 @@ const AdminDashboard = () => {
                       {/* Monthly ECF Chart */}
                       <div className="bg-white p-4 rounded-lg shadow border">
                         <h4 className="font-medium text-gray-700 mb-3">
-                          Monthly ECF: ${coordinatorAnalytics.monthlyECF || 0}
+                          Monthly ECF: INR{" "}
+                          {coordinatorAnalytics.monthlyECF || 0}
                         </h4>
                         <div className="h-64">
                           <MemoizedBarChart
@@ -1363,7 +1373,7 @@ const AdminDashboard = () => {
                       {/* Yearly ECF Chart */}
                       <div className="bg-white p-4 rounded-lg shadow border">
                         <h4 className="font-medium text-gray-700 mb-3">
-                          Yearly ECF: ${coordinatorAnalytics.yearlyECF || 0}
+                          Yearly ECF: INR {coordinatorAnalytics.yearlyECF || 0}
                         </h4>
                         <div className="h-64">
                           <MemoizedBarChart
@@ -1438,6 +1448,25 @@ const AdminDashboard = () => {
                       <div key={log._id} className="border p-4 rounded-lg">
                         <div className="flex justify-between">
                           <div>
+                            {/* User info first */}
+                            {log.userId && (
+                              <div className="mb-1">
+                                <span className="font-semibold text-blue-700">
+                                  {log.userId.name}
+                                </span>
+                                {log.userId.contact && (
+                                  <span className="text-sm text-gray-700 ml-2">
+                                    {log.userId.contact}
+                                  </span>
+                                )}
+                                {log.userId.email && (
+                                  <span className="text-sm text-gray-500 ml-2">
+                                    {log.userId.email}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {/* Action info */}
                             <span className="font-medium">
                               {log.actionType}
                             </span>
@@ -1598,7 +1627,7 @@ const AdminDashboard = () => {
                         Dean
                       </th> */}
                       <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 uppercase">
-                        Assign Dean
+                        Assign TT Coordinator
                       </th>
                     </tr>
                   </thead>
@@ -1654,6 +1683,140 @@ const AdminDashboard = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {activeTab === 8 && (
+            <div>
+              <h2 className="text-xl font-bold mb-4">Completed Processes</h2>
+              {loadingProcessed ? (
+                <p>Loading…</p>
+              ) : processedUsers.length === 0 ? (
+                <p>No completed processes.</p>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th>Name</th>
+                      <th>User ID</th>
+                      <th>Contact</th>
+                      <th>Coordinator</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {processedUsers.map((u) => (
+                      <tr key={u._id}>
+                        <td className="px-4 py-2">{u.name}</td>
+                        <td className="px-4 py-2">{u._id}</td>
+                        <td className="px-4 py-2">{u.contact || "—"}</td>
+                        <td className="px-4 py-2">
+                          {u.onboarding.details.coordinator
+                            ? u.onboarding.details.coordinator.name
+                            : "—"}
+                        </td>
+                        <td className="px-4 py-2">
+                          {/* <button
+                            onClick={() => openAssignTtCoordinator(u._id)}
+                            className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+                          >
+                            Assign TT Coordinator
+                          </button> */}
+
+                          <button
+                            className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+                            onClick={() => {
+                              setUserToAssign(u);
+                              setShowDeanModal(true);
+                            }}
+                          >
+                            Assign TT Coordinator
+                          </button>
+
+                          {showDeanModal && userToAssign && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                              <div className="bg-white p-6 rounded-lg w-full max-w-md">
+                                <h2 className="text-xl font-semibold mb-4">
+                                  Assign to Dean
+                                </h2>
+                                <p className="mb-2">
+                                  <strong>User:</strong> {userToAssign.name} (
+                                  {userToAssign.email})
+                                </p>
+                                {/* <label className="block mb-2">
+                                  Select Dean:
+                                </label>
+                                <select
+                                  className="w-full mb-4 p-2 border rounded"
+                                  value={selectedDeanId}
+                                  onChange={(e) =>
+                                    setSelectedDeanId(e.target.value)
+                                  }
+                                >
+                                  <option value="">— pick a Dean —</option>
+                                  {deans.map((d) => (
+                                    <option key={d._id} value={d._id}>
+                                      {d.name} ({d.email})
+                                    </option>
+                                  ))}
+                                </select> */}
+
+                                <label>Select Dean:</label>
+                                <select
+                                  value={selectedDeanId}
+                                  onChange={(e) =>
+                                    setSelectedDeanId(e.target.value)
+                                  }
+                                  className="w-full p-2 border rounded-lg"
+                                >
+                                  <option value="">— pick a Dean —</option>
+                                  {deans.map((d) => (
+                                    <option key={d._id} value={d._id}>
+                                      {d.name} ({d.email})
+                                    </option>
+                                  ))}
+                                </select>
+                                <div className="flex justify-end space-x-2">
+                                  <button
+                                    onClick={() => setShowDeanModal(false)}
+                                    className="px-4 py-2 bg-gray-300 rounded"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      await axios.put(
+                                        `http://localhost:5000/admin/users/${userToAssign._id}/assign-dean`,
+                                        { deanId: selectedDeanId },
+                                        {
+                                          headers: {
+                                            Authorization: `Bearer ${token}`,
+                                          },
+                                        }
+                                      );
+                                      toast.success("User assigned to Dean");
+                                      setShowDeanModal(false);
+                                      await fetchProcessedUsers();
+                                    }}
+                                    disabled={!selectedDeanId}
+                                    className={`px-4 py-2 rounded text-white ${
+                                      selectedDeanId
+                                        ? "bg-green-600 hover:bg-green-700"
+                                        : "bg-gray-300 cursor-not-allowed"
+                                    }`}
+                                  >
+                                    Assign
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </div>

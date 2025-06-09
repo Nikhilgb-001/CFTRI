@@ -200,26 +200,6 @@ router.post("/action-log", auth, coordinatorOnly, async (req, res) => {
   }
 });
 
-// router.get("/action-logs", auth, coordinatorOnly, async (req, res) => {
-//   try {
-//     let query = {};
-//     // If the user is an admin and has provided a coordinatorId in the query parameters,
-//     // use that for filtering. Otherwise, restrict to the logged-in user's ID.
-//     if (req.user.role === "admin" && req.query.coordinatorId) {
-//       query.coordinator = req.query.coordinatorId;
-//     } else {
-//       query.coordinator = req.user.id;
-//     }
-
-//     const logs = await ActionLog.find(query).sort({ createdAt: -1 });
-//     res.json(logs);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// });
-
-// UPDATE task status for a user assigned to the logged-in coordinator
-
 router.get("/action-logs", auth, coordinatorOnly, async (req, res) => {
   try {
     let query = {};
@@ -699,6 +679,21 @@ router.get("/tech-transfer-report", auth, coordinatorOnly, async (req, res) => {
       .send(buffer);
   } catch (err) {
     console.error("❌ tech-transfer-report error:", err.stack);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.put("/users/:id/process-completed", auth, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { processed: true },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ message: "User not found" });
+    // optionally: create an ActionLog entry here
+    res.json(user);
+  } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
