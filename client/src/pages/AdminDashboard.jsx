@@ -1716,13 +1716,6 @@ const AdminDashboard = () => {
                             : "—"}
                         </td>
                         <td className="px-4 py-2">
-                          {/* <button
-                            onClick={() => openAssignTtCoordinator(u._id)}
-                            className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
-                          >
-                            Assign TT Coordinator
-                          </button> */}
-
                           <button
                             className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
                             onClick={() => {

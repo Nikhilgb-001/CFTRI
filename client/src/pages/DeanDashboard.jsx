@@ -105,7 +105,7 @@ const DeanDashboard = () => {
         usersData[c._id] = usersResults[i].data;
       });
       setUsersByCoord(usersData);
-      setAssignedUsers(usersData[deanData._id] || []);
+      // setAssignedUsers(usersData[deanData._id] || []);
 
       // Fetch tech transfer flows if on that tab
       if (selectedTab === "techTransfer" || selectedTab === "annualReports") {
@@ -144,11 +144,11 @@ const DeanDashboard = () => {
   const fetchAssignedUsers = useCallback(async () => {
     if (!dean) return;
     try {
-      const { data: mine } = await axios.get(
-        "http://localhost:5000/auth/assigned-users",
+      const { data } = await axios.get(
+        "http://localhost:5000/admin/dean/processed-users",
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setAssignedUsers(mine);
+      setAssignedUsers(data);
     } catch (err) {
       console.error("couldn’t fetch assigned users", err);
       toast.error("Could not load your assigned users");
@@ -768,36 +768,74 @@ const DeanDashboard = () => {
         )}
 
         {selectedTab === "assignedUsers" && (
-          <div className="bg-white p-6 rounded-xl shadow-sm">
-            <h2 className="text-2xl font-bold mb-4">Your Assigned Users</h2>
-            {assignedUsers.length === 0 ? (
-              <p>No users have been assigned to you yet.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">{/* … */}</thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {assignedUsers.map((u) => (
-                      <tr key={u._id}>
-                        <td className="px-4 py-2 text-sm text-gray-900">
-                          {u.name}
-                        </td>
-                        <td className="px-4 py-2 text-sm text-gray-700">
-                          {u._id}
-                        </td>
-                        <td className="px-4 py-2 text-sm text-gray-700">
-                          {u.contact || "—"}
-                        </td>
-                        <td className="px-4 py-2 text-sm text-gray-700">
-                          {/* since it’s you, you know it’s you */}
-                          {dean.name}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800 mb-1">
+                    Your Assigned Users
+                  </h2>
+                  <p className="text-gray-500">
+                    Users assigned to you for processing
+                  </p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center">
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                  </button>
+                </div>
               </div>
-            )}
+
+              {assignedUsers.length === 0 ? (
+                <div className="bg-gray-50 p-8 rounded-lg border border-dashed border-gray-300 text-center">
+                  <Users className="mx-auto h-10 w-10 text-gray-400 mb-3" />
+                  <h4 className="text-gray-700 font-medium mb-1">
+                    No users assigned to you yet
+                  </h4>
+                  <p className="text-gray-500">
+                    Users will appear here once assigned by the admin
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {assignedUsers.map((user) => (
+                    <div
+                      key={user._id}
+                      className="bg-white p-4 rounded-lg border border-gray-200 hover:border-indigo-200 transition-colors shadow-xs"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="bg-indigo-100 p-3 rounded-full">
+                          <User className="text-indigo-600 h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-800">
+                            {user.name}
+                          </h3>
+                          <div className="mt-2 space-y-1">
+                            <div className="flex items-center text-sm text-gray-600">
+                              <span className="w-24 text-gray-500">
+                                Contact:
+                              </span>
+                              <span>{user.contact || "Not provided"}</span>
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600">
+                              <span className="w-24 text-gray-500">
+                                Coordinator:
+                              </span>
+                              <span>
+                                {user.onboarding?.details?.coordinator?.name ||
+                                  "Not assigned"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

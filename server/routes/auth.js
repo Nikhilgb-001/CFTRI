@@ -135,29 +135,59 @@ router.post("/register/dean", async (req, res) => {
   }
 });
 
+// router.get("/assigned-users", auth, async (req, res) => {
+//   console.log(">>> /auth/assigned-users called, user:", req.user);
+//   // 1) Must be a dean
+//   if (req.user.role !== "dean") {
+//     return res.status(403).json({ message: "Forbidden" });
+//   }
+
+//   try {
+//     const deanId = req.user.id;
+//     // 2) Find all leads/users assigned to this dean
+//     const users = await User.find({
+//       "onboarding.details.coordinator": deanId,
+//     }).select("-password");
+
+//     // 3) Send them back
+//     res.json(users);
+//   } catch (err) {
+//     console.error("assigned-users error:", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
+
+// Login admin
+
+// router.get("/assigned-users", auth, async (req, res) => {
+//   if (req.user.role !== "dean") {
+//     return res.status(403).json({ message: "Forbidden" });
+//   }
+//   const deanId = req.user.id;
+//   const users = await User.find({
+//     "onboarding.details.coordinator": deanId,
+//   }).select("-password");
+//   res.json(users);
+// });
+
 router.get("/assigned-users", auth, async (req, res) => {
-  console.log(">>> /auth/assigned-users called, user:", req.user);
-  // 1) Must be a dean
   if (req.user.role !== "dean") {
     return res.status(403).json({ message: "Forbidden" });
   }
+  
+  const dean = await Dean.findById(req.user.id).populate({
+    path: "processedUsers",
+    select: "name email contact onboarding.details.coordinator",
+    populate: {
+      path: "onboarding.details.coordinator",
+      select: "name",
+    },
+  });
 
-  try {
-    const deanId = req.user.id;
-    // 2) Find all leads/users assigned to this dean
-    const users = await User.find({
-      "onboarding.details.coordinator": deanId,
-    }).select("-password");
-
-    // 3) Send them back
-    res.json(users);
-  } catch (err) {
-    console.error("assigned-users error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
+  if (!dean) return res.status(404).json({ message: "Dean not found" });
+  res.json(dean.processedUsers);
 });
 
-// Login admin
 router.post("/login/admin", async (req, res) => {
   try {
     const { email, password } = req.body;
