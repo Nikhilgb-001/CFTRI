@@ -82,6 +82,7 @@ const AdminDashboard = () => {
     dailyLogins: null,
     monthlyLogins: null,
   });
+  const [disabled, isButtonDisabled] = useState(false);
   const [processedUsers, setProcessedUsers] = useState([]);
   const [loadingProcessed, setLoadingProcessed] = useState(false);
 
@@ -1717,11 +1718,12 @@ const AdminDashboard = () => {
                         </td>
                         <td className="px-4 py-2">
                           <button
-                            className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
-                            onClick={() => {
-                              setUserToAssign(u);
-                              setShowDeanModal(true);
-                            }}
+                            className={`bg-purple-600 text-white px-3 py-1 rounded ${
+                              isButtonDisabled
+                                ? "opacity-50 cursor-not-allowed"
+                                : "hover:bg-purple-700"
+                            }`}
+                            disabled={isButtonDisabled}
                           >
                             Assign TT Coordinator
                           </button>
