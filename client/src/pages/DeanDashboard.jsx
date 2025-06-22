@@ -117,7 +117,7 @@ const DeanDashboard = () => {
         setFlows(flowsData);
 
         const { data: usersData } = await axios.get(
-          "http://localhost:5000/coordinator/users",
+          "http://localhost:5000/api/dean/assigned-users",
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setAllUsers(usersData);

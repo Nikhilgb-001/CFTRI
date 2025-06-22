@@ -75,6 +75,9 @@ const AdminDashboard = () => {
   const [userLogs, setUserLogs] = useState({});
   const [loadingUserLogs, setLoadingUserLogs] = useState({});
 
+  const [allFlows, setAllFlows] = useState([]);
+  const [loadingAllFlows, setLoadingAllFlows] = useState(false);
+
   const [deans, setDeans] = useState([]);
   const [allCoordinators, setAllCoordinators] = useState([]);
 
@@ -400,6 +403,22 @@ const AdminDashboard = () => {
     }
   }, [activeTab, token]);
 
+  // inside your component, alongside your other useEffects
+  useEffect(() => {
+    if (activeTab === 9) {
+      setLoadingAllFlows(true);
+      axios
+        .get("http://localhost:5000/coordinator/tech-transfer-flow", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => setAllFlows(res.data))
+        .catch((err) =>
+          console.error("Error loading all tech-transfer flows:", err)
+        )
+        .finally(() => setLoadingAllFlows(false));
+    }
+  }, [activeTab, token]);
+
   useEffect(() => {
     if (activeTab === 5 || !coordinatorAnalyticsLoaded) {
       fetchCoordinatorAnalytics();
@@ -627,6 +646,21 @@ const AdminDashboard = () => {
           >
             <Check className="h-5 w-5 mr-2" />
             Processed Users
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab(9);
+              setShowCreateLeadForm(false);
+            }}
+            className={`flex items-center px-4 py-2 rounded-lg transition-all ${
+              activeTab === 9
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-blue-600 hover:bg-blue-50"
+            }`}
+          >
+            <Clipboard className="h-5 w-5 mr-2 text-blue-600" />
+            Flows By TT Coordinator
           </button>
         </div>
 
@@ -1811,6 +1845,68 @@ const AdminDashboard = () => {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+          )}
+
+          {activeTab === 9 && (
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold text-gray-800">
+                Flows By TT Coordinator{" "}
+              </h2>
+
+              {loadingAllFlows ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400 mx-auto" />
+                  <p className="text-gray-500 mt-2">Loading flows…</p>
+                </div>
+              ) : allFlows.length > 0 ? (
+                allFlows.map((flow) => (
+                  <div key={flow._id} className="border rounded-lg p-4">
+                    {/* <div className="mb-2">
+                      <span className="font-semibold">Dean:</span>{" "}
+                      {flow.dean?.name} ({flow.dean?.email})
+                    </div> */}
+                    <div className="mb-4">
+                      <span className="font-semibold">User:</span>{" "}
+                      {flow.user?.name} ({flow.user?.email})
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 uppercase">
+                              Step
+                            </th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 uppercase">
+                              Date
+                            </th>
+                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 uppercase">
+                              Details
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {flow.steps.map((s, i) => (
+                            <tr key={i}>
+                              <td className="px-4 py-2 text-sm text-gray-800">
+                                {s.name}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-gray-800">
+                                {new Date(s.date).toLocaleDateString()}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-gray-800">
+                                {s.details || "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-600">No tech-transfer flows found.</p>
               )}
             </div>
           )}

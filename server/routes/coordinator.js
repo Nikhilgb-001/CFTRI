@@ -606,19 +606,42 @@ router.post("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
   }
 });
 
+// router.get("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
+//   try {
+//     const { coordinatorId } = req.query;
+//     // If admin passed a coordinatorId, filter by that; otherwise default to req.user.id
+//     const filter = coordinatorId
+//       ? { dean: coordinatorId }
+//       : { dean: req.user.id };
+//     const flows = await TechTransferFlow.find(filter)
+//       .populate("dean", "name email") // populate dean's name & email
+//       .sort({ createdAt: -1 });
+//     res.json(flows);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: err.message });
+//   }
+// });
+
+// GET all tech-transfer flows (admins see all, others filtered by dean or coordinatorId)
 router.get("/tech-transfer-flow", auth, coordinatorOnly, async (req, res) => {
   try {
     const { coordinatorId } = req.query;
-    // If admin passed a coordinatorId, filter by that; otherwise default to req.user.id
-    const filter = coordinatorId
-      ? { dean: coordinatorId }
-      : { dean: req.user.id };
+
+    // Admin should see every flow; others get filtered
+    let filter = {};
+    if (req.user.role !== "admin") {
+      filter = coordinatorId ? { dean: coordinatorId } : { dean: req.user.id };
+    }
+
     const flows = await TechTransferFlow.find(filter)
-      .populate("dean", "name email") // populate dean's name & email
+      .populate("dean", "name email")
+      .populate("user", "name email")
       .sort({ createdAt: -1 });
+
     res.json(flows);
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching tech-transfer flows:", err);
     res.status(500).json({ message: err.message });
   }
 });

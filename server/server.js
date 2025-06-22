@@ -6,6 +6,7 @@ import profileRoutes from "./routes/profile.js";
 import adminRoutes from "./routes/admin.js";
 import coordinatorRoutes from "./routes/coordinator.js";
 import leadRoutes from "./routes/lead.js";
+import deanRoutes from "./routes/dean.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -22,6 +23,6 @@ app.use("/profile", profileRoutes);
 app.use("/admin", adminRoutes);
 app.use("/coordinator", coordinatorRoutes);
 app.use("/lead", leadRoutes);
-
+app.use("/api", deanRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
